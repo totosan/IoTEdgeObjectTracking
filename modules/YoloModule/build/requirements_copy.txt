@@ -1,0 +1,7 @@
+#scipy
+#matplotlib
+#Pillow
+#azure-iothub-device-client~=1.4.3
+requests
+moviepy
+sklearn
