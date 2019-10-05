@@ -1,1 +1,6 @@
 .env
+.vscode/settings.json
+.vscode/launch.json
+
+config/*
+!config/.gitkeep
