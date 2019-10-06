@@ -54,7 +54,6 @@ COPY /build/requirements_copy.txt ./
 RUN python3 -m pip install --upgrade pip
 RUN pip3 install --upgrade pip
 
-RUN python3 -m pip install scipy
 RUN pip3 install --no-cache-dir -r requirements_copy.txt
 RUN pip3 install tornado==4.5.3 trollius 
 
