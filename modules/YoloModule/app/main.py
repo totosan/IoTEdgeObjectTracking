@@ -8,12 +8,18 @@ import sys
 import time
 import json
 
-import iothub_client
-# pylint: disable=E0611
-# Disabling linting that is not supported by Pylint for C extensions such as iothub_client. See issue https://github.com/PyCQA/pylint/issues/1955 
-from iothub_client import (IoTHubModuleClient, IoTHubClientError, IoTHubError,
-                           IoTHubMessage, IoTHubMessageDispositionResult,
-                           IoTHubTransportProvider)
+try:
+    import iothub_client
+    # pylint: disable=E0611
+    # Disabling linting that is not supported by Pylint for C extensions such as iothub_client. See issue https://github.com/PyCQA/pylint/issues/1955 
+    from iothub_client import (IoTHubModuleClient, IoTHubClientError, IoTHubError,
+                            IoTHubMessage, IoTHubMessageDispositionResult,
+                            IoTHubTransportProvider)
+except:
+    from azure.iot.device.aio import (IoTHubModuleClient, IoTHubClientError, IoTHubError,
+                            IoTHubMessage, IoTHubMessageDispositionResult,
+                            IoTHubTransportProvider)
+    from azure.iot.device import auth
 
 import VideoCapture
 from VideoCapture import VideoCapture

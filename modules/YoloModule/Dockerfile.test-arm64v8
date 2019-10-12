@@ -30,7 +30,17 @@ FROM toolboc/jetson-nano-l4t-cuda-cudnn-opencv-darknet
 WORKDIR /app
 
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libcurl4-openssl-dev python3-pip libboost-python-dev libgtk2.0-dev python3-setuptools python3-numpy python3-opencv python-opencv && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+     wget \
+     libcurl4-openssl-dev \
+     python3-pip \
+     libboost-python-dev \
+     libgtk2.0-dev \
+     libblas-dev \
+     liblapack-dev \
+     libatlas-base-dev \
+     gfortran \
+     python3-setuptools python3-numpy python3-opencv python-opencv && \
     rm -rf /var/lib/apt/lists/* 
 
 COPY --from=iot-sdk-python-builder /usr/sdk/src/device/doc/package-readme.md /src/device/doc/package-readme.md
@@ -42,12 +52,14 @@ RUN cp /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
 
 COPY /build/requirements_copy.txt ./
 RUN pip3 install --upgrade pip
-RUN pip3 install --no-cache-dir -r requirements_copy.txt
+
+RUN pip3 install --extra-index-url=https://gergely.imreh.net/wheels/ -v -r requirements_copy.txt
 RUN pip3 install tornado==4.5.3 trollius 
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends zip pandoc ffmpeg && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends zip pandoc && \
+    rm -rf /var/lib/apt/lists/* && \
+    export IMAGEIO_FFMPEG_EXE=ffmpeg
 
 RUN git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git && \
     cd youtube-dl && \
