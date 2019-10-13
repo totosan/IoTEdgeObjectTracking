@@ -17,7 +17,6 @@ from VideoStream import VideoStream
 
 import YoloInference
 from YoloInference import YoloInference
-import frameProcessor as fp
 
 class VideoCapture(object):
 
@@ -45,7 +44,6 @@ class VideoCapture(object):
         self.displayFrame = None
         self.fontScale = float(fontScale)
         self.captureInProgress = False
-        self.frameProcessor = fp.FrameProcessor()
 
         print("VideoCapture::__init__()")
         print("OpenCV Version : %s" % (cv2.__version__))
@@ -294,7 +292,7 @@ class VideoCapture(object):
             if False and self.inference:
                 self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
 
-            self.frameProcessor.pipeline(frame, frameH, frameW, self.confidenceLevel)
+            # TODO: add inference handling here
 
             # Calculate FPS
             timeElapsedInMs = (time.time() - tFrameStart) * 1000

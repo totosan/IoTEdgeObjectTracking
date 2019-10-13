@@ -50,16 +50,15 @@ COPY --from=iot-sdk-python-builder /usr/sdk/src/device/samples/iothub_client.so 
 
 RUN cp /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
 
-COPY /build/requirements_copy.txt ./
+COPY /build/requirements.txt ./
 RUN pip3 install --upgrade pip
 
-RUN pip3 install --extra-index-url=https://gergely.imreh.net/wheels/ -v -r requirements_copy.txt
+RUN pip3 install -v -r requirements.txt
 RUN pip3 install tornado==4.5.3 trollius 
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends zip pandoc && \
-    rm -rf /var/lib/apt/lists/* && \
-    export IMAGEIO_FFMPEG_EXE=ffmpeg
+    rm -rf /var/lib/apt/lists/*
 
 RUN git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git && \
     cd youtube-dl && \
