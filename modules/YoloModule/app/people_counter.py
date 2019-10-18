@@ -12,6 +12,7 @@
 # import the necessary packages
 from pyimagesearch.centroidtracker import CentroidTracker
 from pyimagesearch.trackableobject import TrackableObject
+from pyimagesearch.trackerExt import TrackerExt
 from imutils.video import VideoStream
 from imutils.video import FPS
 import numpy as np
@@ -23,10 +24,6 @@ import cv2
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--prototxt", required=True,
-	help="path to Caffe 'deploy' prototxt file")
-ap.add_argument("-m", "--model", required=True,
-	help="path to Caffe pre-trained model")
 ap.add_argument("-i", "--input", type=str,
 	help="path to optional input video file")
 ap.add_argument("-o", "--output", type=str,
@@ -46,7 +43,7 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
 
 # load our serialized model from disk
 print("[INFO] loading model...")
-net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
+net = cv2.dnn.readNetFromCaffe("mobilenet_ssd\\MobileNetSSD_deploy.prototxt", "mobilenet_ssd\\MobileNetSSD_deploy.caffemodel")
 
 # if a video path was not supplied, grab a reference to the webcam
 if not args.get("input", False):
@@ -124,7 +121,7 @@ while True:
 		# set the status and initialize our new set of object trackers
 		status = "Detecting"
 		trackers = []
-
+	
 		# convert the frame to a blob and pass the blob through the
 		# network and obtain the detections
 		blob = cv2.dnn.blobFromImage(frame, 0.007843, (W, H), 127.5)
@@ -136,6 +133,7 @@ while True:
 			# extract the confidence (i.e., probability) associated
 			# with the prediction
 			confidence = detections[0, 0, i, 2]
+			class_type = "unknown"
 
 			# filter out weak detections by requiring a minimum
 			# confidence
@@ -145,9 +143,11 @@ while True:
 				idx = int(detections[0, 0, i, 1])
 
 				# if the class label is not a person, ignore it
-				if CLASSES[idx] != "person":
-					continue
-
+				#if CLASSES[idx] != "car":
+				#	continue
+				
+				class_type = CLASSES[idx]
+				
 				# compute the (x, y)-coordinates of the bounding box
 				# for the object
 				box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
@@ -160,18 +160,21 @@ while True:
 				rect = dlib.rectangle(startX, startY, endX, endY)
 				tracker.start_track(rgb, rect)
 
+				container = TrackerExt(class_type,tracker)
+
 				# add the tracker to our list of trackers so we can
 				# utilize it during skip frames
-				trackers.append(tracker)
+				trackers.append(container)
 
 	# otherwise, we should utilize our object *trackers* rather than
 	# object *detectors* to obtain a higher frame processing throughput
 	else:
 		# loop over the trackers
-		for tracker in trackers:
+		for trackerContainer in trackers:
 			# set the status of our system to be 'tracking' rather
 			# than 'waiting' or 'detecting'
 			status = "Tracking"
+			tracker = trackerContainer.tracker
 
 			# update the tracker and grab the updated position
 			tracker.update(rgb)
@@ -183,27 +186,28 @@ while True:
 			endX = int(pos.right())
 			endY = int(pos.bottom())
 
+			trackerContainer.rect = (startX, startY, endX, endY)
 			# add the bounding box coordinates to the rectangles list
-			rects.append((startX, startY, endX, endY))
-
-	# draw a horizontal line in the center of the frame -- once an
-	# object crosses this line we will determine whether they were
-	# moving 'up' or 'down'
-	cv2.line(frame, (0, H // 2), (W, H // 2), (0, 255, 255), 2)
+			rects.append(trackerContainer.rect)
 
 	# use the centroid tracker to associate the (1) old object
 	# centroids with (2) the newly computed object centroids
-	objects = ct.update(rects)
+	extractedRects = [trackerContainer for trackerContainer in trackers]
+		
+	objects = ct.update(extractedRects)
 
 	# loop over the tracked objects
-	for (objectID, centroid) in objects.items():
+	for (objectID, centroidTupel) in objects.items():
 		# check to see if a trackable object exists for the current
 		# object ID
 		to = trackableObjects.get(objectID, None)
 
+		centroid = centroidTupel[0]
+		className = centroidTupel[1]
+
 		# if there is no existing trackable object, create one
 		if to is None:
-			to = TrackableObject(objectID, centroid)
+			to = TrackableObject(objectID, className, centroid)
 
 		# otherwise, there is a trackable object so we can utilize it
 		# to determine direction
@@ -213,6 +217,7 @@ while True:
 			# us in which direction the object is moving (negative for
 			# 'up' and positive for 'down')
 			y = [c[1] for c in to.centroids]
+
 			direction = centroid[1] - np.mean(y)
 			to.centroids.append(centroid)
 
@@ -237,7 +242,7 @@ while True:
 
 		# draw both the ID of the object and the centroid of the
 		# object on the output frame
-		text = "ID {}".format(objectID)
+		text = "ID {}, {}".format(objectID, to.type)
 		cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
 			cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 		cv2.circle(frame, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
