@@ -10,13 +10,18 @@ import json
 import os
 import signal
 
+#Vision imports
 import ImageServer
 from ImageServer import ImageServer
 import VideoStream
 from VideoStream import VideoStream
 
-import YoloInference
-from YoloInference import YoloInference
+#ML imports
+#import YoloInference
+#from YoloInference import YoloInference
+
+#custom imports
+import DetectAndTrack
 
 class VideoCapture(object):
 
@@ -60,7 +65,7 @@ class VideoCapture(object):
         self.imageServer = ImageServer(80, self)
         self.imageServer.start()
 
-        self.yoloInference = YoloInference(self.fontScale)
+        #self.yoloInference = YoloInference(self.fontScale)
 
     def __IsCaptureDev(self, videoPath):
         try: 
@@ -68,6 +73,12 @@ class VideoCapture(object):
         except ValueError:
             return False
 
+    def __IsHttp(self, videoPath):
+        try:
+            return True
+        except:
+            return False
+    
     def __IsRtsp(self, videoPath):
         try:
             if 'rtsp:' in videoPath.lower() or '/api/holographic/stream' in videoPath.lower():
@@ -124,6 +135,9 @@ class VideoCapture(object):
             # Needed to load at least one frame into the VideoStream class
             time.sleep(1.0)
             self.captureInProgress = True
+        
+        #elif self.__IsHttp(newVideoPath):
+
 
         elif self.__IsYoutube(newVideoPath):
             print("\r\n===> YouTube Video Source")
@@ -258,6 +272,7 @@ class VideoCapture(object):
 
         signal.signal(signal.SIGALRM, self.videoStreamReadTimeoutHandler)
 
+        detectionTracker = DetectAndTrack()
         while True:
 
             # Get current time before we capture a frame
@@ -292,7 +307,7 @@ class VideoCapture(object):
             if False and self.inference:
                 self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
 
-            # TODO: add inference handling here
+            detectionTracker.doStuff(frame, frameW, frameH)
 
             # Calculate FPS
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
@@ -323,3 +338,7 @@ class VideoCapture(object):
 
         self.imageServer.close()
         cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    video = VideoCapture("/dev/video0",videoH=480, videoW=640,fontScale=1.0)
+    video.start()

@@ -1,4 +1,4 @@
-FROM balenalib/jetson-tx2-ubuntu:bionic as iot-sdk-python-builder
+FROM arm32v7/ubuntu:latest
 
 # Update image
 SHELL ["/bin/bash", "-c"]
@@ -25,7 +25,8 @@ RUN source env3/bin/activate && ./src/build_all/linux/release.sh --build-python 
 #RUN ./src/build_all/linux/setup.sh
 #RUN ./src/build_all/linux/release.sh
 
-FROM toolboc/jetson-nano-l4t-cuda-cudnn-opencv-darknet
+FROM loretoparisi/darknet
+FROM globiq/opencv
 
 WORKDIR /app
 
@@ -53,9 +54,8 @@ RUN cp /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
 COPY /build/requirements.txt ./
 RUN pip3 install --upgrade pip
 
-RUN pip3 install tornado==4.5.3 trollius 
-RUN pip3 install scipy numpy
 RUN pip3 install -v -r requirements.txt
+RUN pip3 install tornado==4.5.3 trollius 
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends zip pandoc && \
