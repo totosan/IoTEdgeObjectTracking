@@ -6,7 +6,8 @@
     "tag": {
       "version": "$CONTAINER_MODULE_VERSION",
       "platforms": {
-        "arm32v7": "./Dockerfile.arm64v8",
+        "arm32v7": "./Dockerfile.arm32v7",
+        "arm64v8": "./Dockerfile.arm64v8",
         "test-arm64v8": "./Dockerfile.test-arm64v8"
       }
     },

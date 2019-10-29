@@ -24,8 +24,7 @@ import dlib
 import cv2
 
 
-
-class DetectAndTrack:
+class DetectAndTrack():
     def __init__(self):
         self.SKIP_FRAMES = 10
         self.CONFIDENCE_LIMIT = 0.4
@@ -36,10 +35,10 @@ class DetectAndTrack:
             "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
             "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
             "sofa", "train", "tvmonitor"]
-
+               
         # load our serialized model from disk
         print("[INFO] loading model...")
-        self.net = cv2.dnn.readNetFromCaffe("mobilenet_ssd\\MobileNetSSD_deploy.prototxt", "mobilenet_ssd\\MobileNetSSD_deploy.caffemodel")
+        self.net = cv2.dnn.readNetFromCaffe("mobilenet_ssd/MobileNetSSD_deploy.prototxt", "mobilenet_ssd/MobileNetSSD_deploy.caffemodel")
 
         # initialize the frame dimensions (we'll set them as soon as we read
         # the first frame from the video)
@@ -201,14 +200,14 @@ class DetectAndTrack:
                     # is moving up) AND the centroid is above the center
                     # line, count the object
                     if direction < 0 and centroid[1] < H // 2:
-                        totalUp += 1
+                        self.totalUp += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
                     elif direction > 0 and centroid[1] > H // 2:
-                        totalDown += 1
+                        self.totalDown += 1
                         to.counted = True
 
             # store the trackable object in our dictionary
@@ -234,10 +233,11 @@ class DetectAndTrack:
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
         # show the output frame
-        cv2.imshow("Frame", frame)
-        key = cv2.waitKey(1) & 0xFF
+        #cv2.imshow("Frame", frame)
+        #key = cv2.waitKey(1) & 0xFF
 
         # increment the total number of frames processed thus far and
         # then update the FPS counter
         self.totalFrames += 1
         self.fps.update()
+        return frame

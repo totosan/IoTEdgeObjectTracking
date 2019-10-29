@@ -22,6 +22,7 @@ from VideoStream import VideoStream
 
 #custom imports
 import DetectAndTrack
+from DetectAndTrack import DetectAndTrack
 
 class VideoCapture(object):
 
@@ -306,8 +307,8 @@ class VideoCapture(object):
             # Run Object Detection -- GUARD
             if False and self.inference:
                 self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
-
-            detectionTracker.doStuff(frame, frameW, frameH)
+            
+            frame = detectionTracker.doStuff(frame, frameW, frameH)
 
             # Calculate FPS
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
@@ -327,8 +328,8 @@ class VideoCapture(object):
             if (1000 / cameraFPS) > timeElapsedInMs:
                 # This is faster than image source (e.g. camera) can feed.  
                 waitTimeBetweenFrames = perFrameTimeInMs - timeElapsedInMs
-                #if self.verbose:
-                    #print("  Wait time between frames :" + str(int(waitTimeBetweenFrames)))
+                # if self.verbose:
+                #     print("  Wait time between frames :" + str(int(waitTimeBetweenFrames)))
                 time.sleep(waitTimeBetweenFrames/1000.0)
 
     def __exit__(self, exception_type, exception_value, traceback):
