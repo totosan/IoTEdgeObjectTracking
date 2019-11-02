@@ -7,7 +7,8 @@ import random
 import sys
 import time
 import json
-
+import ptvsd
+ptvsd.enable_attach(('0.0.0.0',  5678))
 try:
     import iothub_client
     # pylint: disable=E0611

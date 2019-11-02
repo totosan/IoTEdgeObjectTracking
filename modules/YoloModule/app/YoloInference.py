@@ -18,6 +18,9 @@ import time
 import os
 import json
 from datetime import datetime
+import YoloDetection
+from YoloDetection import YoloDetection
+import ptvsd
 
 yolocfg  = r'yolo/yolov3-tiny.cfg'
 yoloweight = r'yolo/yolov3-tiny.weights'
@@ -87,18 +90,16 @@ class YoloInference(object):
 
     def runInference(self, frame, frameW, frameH, confidenceLevel):
         try:
-
-            detections = darknet.detect(darknet.netMain, darknet.metaMain, frame, confidenceLevel)
+            frame_small = cv2.resize(frame, (416, 416))
+            detections = darknet.detect(darknet.netMain, darknet.metaMain, frame_small, confidenceLevel)
 
             countsByClassId = {};
 
             classes = []
             boxes = []
-            boxes_inv = []
             confidences = []
+            yoloDetections = []
             for detection in detections:
-              
-                classLabel = detection[0]
                 classID = str(detection[0], encoding)
                 classes.append(classID)
 
@@ -112,31 +113,32 @@ class YoloInference(object):
                     else:
                         countsByClassId[classID] = countsByClassId[classID] + 1
 
-                    bounds = detection[2]
-                    
-                    xEntent = int(bounds[2])
-                    yExtent = int(bounds[3])
+                    bounds = detection[2] * np.array([frameW/416,frameH/416,frameW/416,frameH/416])
+
+                    ptvsd.break_into_debugger()
+
+                    width = int(bounds[2])
+                    height = int(bounds[3])
                     # Coordinates are around the center
                     xCoord = int(bounds[0] - bounds[2]/2)
                     yCoord = int(bounds[1] - bounds[3]/2)
-                    # std
-                    box = [xCoord, yCoord, xCoord + xEntent, yCoord + yExtent]
+                    # std: obsolete, if working with tracker
+                    box = [xCoord, yCoord, xCoord + width, yCoord + height]
                     boxes.append(box)
-                    # for new way
-                    box_inv = [yCoord, xCoord, yCoord + yEntent, xCoord + xExtent]
-                    boxes_inv.append(box_inv)
 
-                    self.__draw_rect(frame, classID, confidence, xCoord, yCoord, xCoord + xEntent, yCoord + yExtent)
+                    yoloDetections.append(YoloDetection(box, classID, confidence))
+
+                    self.__draw_rect(frame, classID, confidence, xCoord, yCoord, xCoord + width, yCoord + height)
 
             if len(countsByClassId) > 0 and (datetime.now() - self.lastMessageSentTime).total_seconds() >= 1 :
                 strMessage = json.dumps(countsByClassId)
                 message = IoTHubMessage(strMessage)
                 print(strMessage)
-                AppState.HubManager.send_event_to_output("output1", message, 0)
+                #AppState.HubManager.send_event_to_output("output1", message, 0)
                 self.lastMessageSentTime=datetime.now()
 
         except Exception as e:
             print("Exception during AI Inference")
             print(e)
 
-        return boxes_inv, classes, confidences
+        return yoloDetections

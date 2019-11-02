@@ -93,6 +93,8 @@ RUN git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git && \
     make && \
     make install
 
+RUN pip3 install ptvsd
+
 ADD /app/ .
 
 

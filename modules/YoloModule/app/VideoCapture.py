@@ -1,6 +1,8 @@
-#To make python 2 and python 3 compatible code
+# To make python 2 and python 3 compatible code
 from __future__ import division
 from __future__ import absolute_import
+
+import ptvsd
 
 import cv2
 import numpy as np
@@ -10,31 +12,32 @@ import json
 import os
 import signal
 
-#Vision imports
+# Vision imports
 import ImageServer
 from ImageServer import ImageServer
 import VideoStream
 from VideoStream import VideoStream
 
-#ML imports
-#import YoloInference
-#from YoloInference import YoloInference
+# ML imports
+import YoloInference
+from YoloInference import YoloInference
 
-#custom imports
+# custom imports
 import DetectAndTrack
 from DetectAndTrack import DetectAndTrack
+
 
 class VideoCapture(object):
 
     def __init__(
             self,
-            videoPath = "",
-            verbose = True,
-            videoW = 0,
-            videoH = 0,
-            fontScale = 1.0,
-            inference = True,
-            confidenceLevel = 0.5):
+            videoPath="",
+            verbose=True,
+            videoW=0,
+            videoH=0,
+            fontScale=1.0,
+            inference=True,
+            confidenceLevel=0.5):
 
         self.videoPath = videoPath
         self.verbose = verbose
@@ -66,10 +69,10 @@ class VideoCapture(object):
         self.imageServer = ImageServer(80, self)
         self.imageServer.start()
 
-        #self.yoloInference = YoloInference(self.fontScale)
+        self.yoloInference = YoloInference(self.fontScale)
 
     def __IsCaptureDev(self, videoPath):
-        try: 
+        try:
             return '/dev/video' in videoPath.lower()
         except ValueError:
             return False
@@ -79,7 +82,7 @@ class VideoCapture(object):
             return True
         except:
             return False
-    
+
     def __IsRtsp(self, videoPath):
         try:
             if 'rtsp:' in videoPath.lower() or '/api/holographic/stream' in videoPath.lower():
@@ -136,9 +139,8 @@ class VideoCapture(object):
             # Needed to load at least one frame into the VideoStream class
             time.sleep(1.0)
             self.captureInProgress = True
-        
-        #elif self.__IsHttp(newVideoPath):
 
+        # elif self.__IsHttp(newVideoPath):
 
         elif self.__IsYoutube(newVideoPath):
             print("\r\n===> YouTube Video Source")
@@ -150,7 +152,8 @@ class VideoCapture(object):
             if self.vCapture.isOpened():
                 self.captureInProgress = True
             else:
-                print("===========================\r\nWARNING : Failed to Open Video Source\r\n===========================\r\n")
+                print(
+                    "===========================\r\nWARNING : Failed to Open Video Source\r\n===========================\r\n")
 
         elif self.__IsCaptureDev(newVideoPath):
             print("===> Webcam Video Source")
@@ -169,9 +172,11 @@ class VideoCapture(object):
             if self.vCapture.isOpened():
                 self.captureInProgress = True
             else:
-                print("===========================\r\nWARNING : Failed to Open Video Source\r\n===========================\r\n")
+                print(
+                    "===========================\r\nWARNING : Failed to Open Video Source\r\n===========================\r\n")
         else:
-            print("===========================\r\nWARNING : No Video Source\r\n===========================\r\n")
+            print(
+                "===========================\r\nWARNING : No Video Source\r\n===========================\r\n")
             self.useStream = False
             self.useYouTube = False
             self.vCapture = None
@@ -206,7 +211,7 @@ class VideoCapture(object):
         return self.displayFrame
 
     def videoStreamReadTimeoutHandler(signum, frame):
-        raise Exception("VideoStream Read Timeout") 
+        raise Exception("VideoStream Read Timeout")
 
     def start(self):
         while True:
@@ -237,7 +242,7 @@ class VideoCapture(object):
         else:
             print("Error : No Video Source")
             return
-           
+
         if self.videoW != 0 and self.videoH != 0 and self.videoH != cameraH and self.videoW != cameraW:
             needResizeFrame = True
             frameH = self.videoH
@@ -248,11 +253,13 @@ class VideoCapture(object):
             frameW = cameraW
 
         if needResizeFrame:
-            print("Original frame size  : " + str(cameraW) + "x" + str(cameraH))
+            print("Original frame size  : " +
+                  str(cameraW) + "x" + str(cameraH))
             print("     New frame size  : " + str(frameW) + "x" + str(frameH))
             print("             Resize  : " + str(needResizeFrame))
         else:
-            print("Camera frame size    : " + str(cameraW) + "x" + str(cameraH))
+            print("Camera frame size    : " +
+                  str(cameraW) + "x" + str(cameraH))
             print("       frame size    : " + str(frameW) + "x" + str(frameH))
 
         # Check camera's FPS
@@ -273,7 +280,7 @@ class VideoCapture(object):
 
         signal.signal(signal.SIGALRM, self.videoStreamReadTimeoutHandler)
 
-        detectionTracker = DetectAndTrack()
+        detectionTracker = DetectAndTrack(10, self.confidenceLevel)
         while True:
 
             # Get current time before we capture a frame
@@ -304,11 +311,12 @@ class VideoCapture(object):
             if needResizeFrame:
                 frame = cv2.resize(frame, (self.videoW, self.videoH))
 
+            #ptvsd.break_into_debugger()
+
             # Run Object Detection -- GUARD
-            if False and self.inference:
-                self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
-            
-            frame = detectionTracker.doStuff(frame, frameW, frameH)
+            if self.inference:
+                yoloDetections = self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
+                detectionTracker.doStuff(frame, frameW, frameH, yoloDetections)
 
             # Calculate FPS
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
@@ -319,14 +327,15 @@ class VideoCapture(object):
                 currentFPS = cameraFPS
 
             # Add FPS Text to the frame
-            cv2.putText( frame, "FPS " + str(round(currentFPS, 1)), (10, int(30 * self.fontScale)), cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, (0,0,255), 2)
+            cv2.putText(frame, "FPS " + str(round(currentFPS, 1)), (10, int(30 *
+                                                                            self.fontScale)), cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, (0, 0, 255), 2)
 
-            self.displayFrame = cv2.imencode( '.jpg', frame )[1].tobytes()
+            self.displayFrame = cv2.imencode('.jpg', frame)[1].tobytes()
 
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
 
             if (1000 / cameraFPS) > timeElapsedInMs:
-                # This is faster than image source (e.g. camera) can feed.  
+                # This is faster than image source (e.g. camera) can feed.
                 waitTimeBetweenFrames = perFrameTimeInMs - timeElapsedInMs
                 # if self.verbose:
                 #     print("  Wait time between frames :" + str(int(waitTimeBetweenFrames)))
@@ -340,6 +349,7 @@ class VideoCapture(object):
         self.imageServer.close()
         cv2.destroyAllWindows()
 
+
 if __name__ == "__main__":
-    video = VideoCapture("/dev/video0",videoH=480, videoW=640,fontScale=1.0)
+    video = VideoCapture("/dev/video0", videoH=480, videoW=640, fontScale=1.0)
     video.start()
