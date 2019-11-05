@@ -12,7 +12,6 @@ import iothub_client
 from iothub_client import (IoTHubMessage)
 
 import cv2
-#import cv2.cv as cv
 import numpy as np
 import time
 import os
@@ -28,7 +27,6 @@ classesFile = r'yolo/coco.names'
 dataFile = r'yolo/coco.data'
 
 encoding = 'utf-8'
-
 
 class YoloInference(object):
 
@@ -69,13 +67,73 @@ class YoloInference(object):
         output_layer = [layerNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
         return output_layer
 
-    def __draw_rect(self, image, class_id, confidence, x, y, w, h):
+    # Malisiewicz et al.
+    def __non_max_suppression_fast(self, boxes, overlapThresh):
+        # if there are no boxes, return an empty list
+        if len(boxes) == 0:
+            return []
+
+        # if the bounding boxes integers, convert them to floats --
+        # this is important since we'll be doing a bunch of divisions
+        if boxes.dtype.kind == "i":
+            boxes = boxes.astype("float")
+
+        # initialize the list of picked indexes	
+        pick = []
+
+        boxes = np.array([(box[0], box[1], box[0]+ box[2], box[1]+ box[3]) for box in boxes])
+
+        # grab the coordinates of the bounding boxes
+        x1 = boxes[:,0]
+        y1 = boxes[:,1]
+        x2 = boxes[:,2]
+        y2 = boxes[:,3]
+
+        # compute the area of the bounding boxes and sort the bounding
+        # boxes by the bottom-right y-coordinate of the bounding box
+        area = (x2 - x1 + 1) * (y2 - y1 + 1)
+        idxs = np.argsort(y2)
+
+        # keep looping while some indexes still remain in the indexes
+        # list
+        while len(idxs) > 0:
+            # grab the last index in the indexes list and add the
+            # index value to the list of picked indexes
+            last = len(idxs) - 1
+            i = idxs[last]
+            pick.append(i)
+
+            # find the largest (x, y) coordinates for the start of
+            # the bounding box and the smallest (x, y) coordinates
+            # for the end of the bounding box
+            xx1 = np.maximum(x1[i], x1[idxs[:last]])
+            yy1 = np.maximum(y1[i], y1[idxs[:last]])
+            xx2 = np.minimum(x2[i], x2[idxs[:last]])
+            yy2 = np.minimum(y2[i], y2[idxs[:last]])
+
+            # compute the width and height of the bounding box
+            w = np.maximum(0, xx2 - xx1 + 1)
+            h = np.maximum(0, yy2 - yy1 + 1)
+
+            # compute the ratio of overlap
+            overlap = (w * h) / area[idxs[:last]]
+
+            # delete all indexes from the index list that have
+            idxs = np.delete(idxs, np.concatenate(([last],
+                np.where(overlap > overlapThresh)[0])))
+
+        # return only the bounding boxes that were picked using the
+        # integer data type
+        return boxes[pick].astype("int")
+
+
+    def __draw_rect(self, image, class_id, confidence, x, y, x2, y2):
 
         if self.verbose:
             print("draw_rect x :" + str(x))
             print("draw_rect x :" + str(y))
-            print("draw_rect w :" + str(w))
-            print("draw_rect h :" + str(h))
+            print("draw_rect w :" + str(x2))
+            print("draw_rect h :" + str(y2))
 
         label = '%.2f' % confidence
         label = '%s:%s' % (class_id, label)
@@ -83,22 +141,31 @@ class YoloInference(object):
 
         labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, self.fontThickness)
 
-        cv2.rectangle(image, (x, y), (w, h), color, self.fontThickness)
+        cv2.rectangle(image, (x, y), (x2, y2), color, self.fontThickness)
 
         # draw text inside the bounding box
         cv2.putText(image, label, (x + self.fontThickness + 2, y + labelSize[1] + baseLine + self.fontThickness + 2), cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, color, self.fontThickness)
 
     def runInference(self, frame, frameW, frameH, confidenceLevel):
         try:
-            frame_small = cv2.resize(frame, (416, 416))
-            detections = darknet.detect(darknet.netMain, darknet.metaMain, frame_small, confidenceLevel)
-
-            countsByClassId = {};
-
+            countsByClassId = {}
             classes = []
             boxes = []
             confidences = []
             yoloDetections = []
+            
+            frame_small = cv2.resize(frame, (416, 416))
+            detections = darknet.detect(darknet.netMain, darknet.metaMain, frame_small, confidenceLevel)
+
+            if detections is not None and len(detections)>1:
+                ptvsd.break_into_debugger()
+            else:  
+                return yoloDetections
+
+            boundingBoxes = np.array(list((item[2][0],item[2][1],item[2][0]+item[2][0], item[2][1]+item[2][3]) for item in detections[:]))
+            idxs = self.__non_max_suppression_fast(boundingBoxes, 0.3)
+            print(f"{len(idxs)}({idxs}) from {len(boundingBoxes)} boxes")            
+
             for detection in detections:
                 classID = str(detection[0], encoding)
                 classes.append(classID)
@@ -115,8 +182,6 @@ class YoloInference(object):
 
                     bounds = detection[2] * np.array([frameW/416,frameH/416,frameW/416,frameH/416])
 
-                    ptvsd.break_into_debugger()
-
                     width = int(bounds[2])
                     height = int(bounds[3])
                     # Coordinates are around the center
@@ -128,7 +193,8 @@ class YoloInference(object):
 
                     yoloDetections.append(YoloDetection(box, classID, confidence))
 
-                    self.__draw_rect(frame, classID, confidence, xCoord, yCoord, xCoord + width, yCoord + height)
+            for i in idxs:
+                self.__draw_rect(frame, "car", 0.0, i[0], i[1], i[2], i[3])
 
             if len(countsByClassId) > 0 and (datetime.now() - self.lastMessageSentTime).total_seconds() >= 1 :
                 strMessage = json.dumps(countsByClassId)

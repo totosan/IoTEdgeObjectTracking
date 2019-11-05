@@ -80,43 +80,34 @@ class DetectAndTrack():
 
             # loop over the detections
             for detection in yoloDetections:
-                # extract the confidence (i.e., probability) associated
-                # with the prediction
-                confidence = detection.confidence
-                class_type = "unknown"
+                class_type = detection.classType
 
-                # filter out weak detections by requiring a minimum
-                # confidence
-                if confidence > self.CONFIDENCE_LIMIT:
-                   
-                    class_type = detection.classType
+                # compute the (x, y)-coordinates of the bounding box
+                # for the object
+                box = detection.box[0:4] * np.array([1, 1, 1, 1])
+                (startX, startY, endX, endY) = box.astype("int")
 
-                    # compute the (x, y)-coordinates of the bounding box
-                    # for the object
-                    box = detection.box[0:4] * np.array([1, 1, 1, 1])
-                    (startX, startY, endX, endY) = box.astype("int")
+                # construct a dlib rectangle object from the bounding
+                # box coordinates and then start the dlib correlation
+                # tracker
+                tracker = dlib.correlation_tracker()
+                rect = dlib.rectangle(startX, startY, endX, endY)
 
-                    # construct a dlib rectangle object from the bounding
-                    # box coordinates and then start the dlib correlation
-                    # tracker
-                    tracker = dlib.correlation_tracker()
-                    rect = dlib.rectangle(startX, startY, endX, endY)
+                if __myDebug__:
+                    cv2.rectangle(frame, (startX, startY),
+                                    (endX, endY), (0, 0, 0), 1)
+                    cv2.putText(frame, class_type, (startX, startY),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                    if __myDebug__:
-                        cv2.rectangle(frame, (startX, startY),
-                                        (endX, endY), (0, 0, 0), 1)
-                        cv2.putText(frame, class_type, (startX, startY),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                tracker.start_track(rgb, rect)
 
-                    tracker.start_track(rgb, rect)
+                container = TrackerExt(class_type, tracker, (startX,startY,endX,endY))
 
-                    container = TrackerExt(class_type, tracker, (startX,startY,endX,endY))
-
-                    ptvsd.break_into_debugger()
-        
-                    # add the tracker to our list of trackers so we can
-                    # utilize it during skip frames
-                    self.trackers.append(container)
+                ptvsd.break_into_debugger()
+    
+                # add the tracker to our list of trackers so we can
+                # utilize it during skip frames
+                self.trackers.append(container)
 
         # otherwise, we should utilize our object *trackers* rather than
         # object *detectors* to obtain a higher frame processing throughput
