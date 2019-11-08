@@ -1,4 +1,4 @@
-#To make python 2 and python 3 compatible code
+# To make python 2 and python 3 compatible code
 from __future__ import division
 from __future__ import absolute_import
 
@@ -8,7 +8,7 @@ import AppState
 
 import iothub_client
 # pylint: disable=E0611
-# Disabling linting that is not supported by Pylint for C extensions such as iothub_client. See issue https://github.com/PyCQA/pylint/issues/1955 
+# Disabling linting that is not supported by Pylint for C extensions such as iothub_client. See issue https://github.com/PyCQA/pylint/issues/1955
 from iothub_client import (IoTHubMessage)
 
 import cv2
@@ -19,20 +19,26 @@ import json
 from datetime import datetime
 import YoloDetection
 from YoloDetection import YoloDetection
-import ptvsd
-
-yolocfg  = r'yolo/yolov3-tiny.cfg'
+try:
+    import ptvsd
+    __myDebug__ = True 
+    #ptvsd.enable_attach(('0.0.0.0',  5678))   
+except ImportError:
+    __myDebug__ = False
+    
+yolocfg = r'yolo/yolov3-tiny.cfg'
 yoloweight = r'yolo/yolov3-tiny.weights'
 classesFile = r'yolo/coco.names'
 dataFile = r'yolo/coco.data'
 
 encoding = 'utf-8'
 
+
 class YoloInference(object):
 
     def __init__(
             self,
-            fontScale = 1.0):
+            fontScale=1.0):
 
         print("YoloInference::__init__()")
         print("===============================================================")
@@ -56,15 +62,18 @@ class YoloInference(object):
 
         # Generate colors for different classes
         print("   - Setting Colors")
-        self.colors = np.random.uniform(0, 255, size=(len(self.classLabels), 3))
+        self.colors = np.random.uniform(
+            0, 255, size=(len(self.classLabels), 3))
 
         # Read pre-trained model and config file
         print("   - Loading Model and Config")
-        darknet.performDetect( configPath = yolocfg, weightPath = yoloweight, metaPath= dataFile, initOnly= True )
+        darknet.performDetect(
+            configPath=yolocfg, weightPath=yoloweight, metaPath=dataFile, initOnly=True)
 
     def __get_output_layers(self, net):
         layerNames = net.getLayerNames()
-        output_layer = [layerNames[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+        output_layer = [layerNames[i[0] - 1]
+                        for i in net.getUnconnectedOutLayers()]
         return output_layer
 
     # Malisiewicz et al.
@@ -78,16 +87,16 @@ class YoloInference(object):
         if boxes.dtype.kind == "i":
             boxes = boxes.astype("float")
 
-        # initialize the list of picked indexes	
+        # initialize the list of picked indexes
         pick = []
 
-        boxes = np.array([(box[0], box[1], box[0]+ box[2], box[1]+ box[3]) for box in boxes])
+        #boxes = np.array([(box[0], box[1], box[0]+ box[2], box[1]+ box[3]) for box in boxes])
 
         # grab the coordinates of the bounding boxes
-        x1 = boxes[:,0]
-        y1 = boxes[:,1]
-        x2 = boxes[:,2]
-        y2 = boxes[:,3]
+        x1 = boxes[:, 0]
+        y1 = boxes[:, 1]
+        x2 = boxes[:, 2]
+        y2 = boxes[:, 3]
 
         # compute the area of the bounding boxes and sort the bounding
         # boxes by the bottom-right y-coordinate of the bounding box
@@ -120,12 +129,11 @@ class YoloInference(object):
 
             # delete all indexes from the index list that have
             idxs = np.delete(idxs, np.concatenate(([last],
-                np.where(overlap > overlapThresh)[0])))
+                                                   np.where(overlap > overlapThresh)[0])))
 
         # return only the bounding boxes that were picked using the
         # integer data type
-        return boxes[pick].astype("int")
-
+        return pick
 
     def __draw_rect(self, image, class_id, confidence, x, y, x2, y2):
 
@@ -139,39 +147,33 @@ class YoloInference(object):
         label = '%s:%s' % (class_id, label)
         color = self.colors[self.classLabels.index(class_id)]
 
-        labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, self.fontThickness)
+        labelSize, baseLine = cv2.getTextSize(
+            label, cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, self.fontThickness)
 
         cv2.rectangle(image, (x, y), (x2, y2), color, self.fontThickness)
 
         # draw text inside the bounding box
-        cv2.putText(image, label, (x + self.fontThickness + 2, y + labelSize[1] + baseLine + self.fontThickness + 2), cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, color, self.fontThickness)
+        cv2.putText(image, label, (x + self.fontThickness + 2, y +
+                                   labelSize[1] + baseLine + self.fontThickness + 2), cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, color, self.fontThickness)
 
     def runInference(self, frame, frameW, frameH, confidenceLevel):
         try:
             countsByClassId = {}
-            classes = []
             boxes = []
-            confidences = []
             yoloDetections = []
-            
+
             frame_small = cv2.resize(frame, (416, 416))
-            detections = darknet.detect(darknet.netMain, darknet.metaMain, frame_small, confidenceLevel)
+            detections = darknet.detect(
+                darknet.netMain, darknet.metaMain, frame_small, confidenceLevel)
 
-            if detections is not None and len(detections)>1:
-                ptvsd.break_into_debugger()
-            else:  
-                return yoloDetections
-
-            boundingBoxes = np.array(list((item[2][0],item[2][1],item[2][0]+item[2][0], item[2][1]+item[2][3]) for item in detections[:]))
+            boundingBoxes = np.array(list(
+                (item[2][0], item[2][1], item[2][0]+item[2][2], item[2][1]+item[2][3]) for item in detections[:]))
             idxs = self.__non_max_suppression_fast(boundingBoxes, 0.3)
-            print(f"{len(idxs)}({idxs}) from {len(boundingBoxes)} boxes")            
 
-            for detection in detections:
+            reducedDetections = [detections[idx] for idx in idxs]
+            for detection in reducedDetections:
                 classID = str(detection[0], encoding)
-                classes.append(classID)
-
                 confidence = detection[1]
-                confidences.append(confidence)
 
                 if confidence > confidenceLevel:
 
@@ -180,7 +182,7 @@ class YoloInference(object):
                     else:
                         countsByClassId[classID] = countsByClassId[classID] + 1
 
-                    bounds = detection[2] * np.array([frameW/416,frameH/416,frameW/416,frameH/416])
+                    bounds = detection[2]* np.array([frameW/416,frameH/416,frameW/416,frameH/416])
 
                     width = int(bounds[2])
                     height = int(bounds[3])
@@ -190,18 +192,32 @@ class YoloInference(object):
                     # std: obsolete, if working with tracker
                     box = [xCoord, yCoord, xCoord + width, yCoord + height]
                     boxes.append(box)
+                    yoloDetections.append(
+                        YoloDetection(box, classID, confidence))
 
-                    yoloDetections.append(YoloDetection(box, classID, confidence))
+                    # draw detection into frame tagged with class id an confidence
+                    #self.__draw_rect(frame, classID, confidence, xCoord, yCoord, xCoord + width, yCoord + height)
 
-            for i in idxs:
-                self.__draw_rect(frame, "car", 0.0, i[0], i[1], i[2], i[3])
+            if __myDebug__:
+                if detections is not None and len(detections) > 1:
+                    ptvsd.break_into_debugger()
+                else:
+                    return yoloDetections
 
-            if len(countsByClassId) > 0 and (datetime.now() - self.lastMessageSentTime).total_seconds() >= 1 :
+            #relevantBoxes = self.__non_max_suppression_fast(
+            #    np.array(boxes), 0.3)
+            #for b in relevantBoxes:
+            #    result = np.all((boxes <= b[0]) & (boxes <= b[1]) & (
+            #        boxes <= b[2]) & (boxes <= b[3]), axis=1)
+            #    if len(result) > 0 and len(result[0]) > 0:
+            #        print(f"result is there..! :-){boxes[result[0]]}")
+
+            if len(countsByClassId) > 0 and (datetime.now() - self.lastMessageSentTime).total_seconds() >= 1:
                 strMessage = json.dumps(countsByClassId)
                 message = IoTHubMessage(strMessage)
                 print(strMessage)
                 #AppState.HubManager.send_event_to_output("output1", message, 0)
-                self.lastMessageSentTime=datetime.now()
+                self.lastMessageSentTime = datetime.now()
 
         except Exception as e:
             print("Exception during AI Inference")

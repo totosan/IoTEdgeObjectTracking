@@ -15,7 +15,6 @@ from pyimagesearch.trackableobject import TrackableObject
 from pyimagesearch.trackerExt import TrackerExt
 from imutils.video import VideoStream
 from imutils.video import FPS
-import urllib.request as urllib2
 import numpy as np
 import argparse
 import imutils
@@ -23,9 +22,12 @@ import time
 import dlib
 import cv2
 
-import ptvsd
+try:
+    import ptvsd
+    __myDebug__ = True    
+except ImportError:
+    __myDebug__ = False
 
-__myDebug__ = False
 
 class DetectAndTrack():
     def __init__(self, skipFrame=10, confidence=0.4):
@@ -102,8 +104,6 @@ class DetectAndTrack():
                 tracker.start_track(rgb, rect)
 
                 container = TrackerExt(class_type, tracker, (startX,startY,endX,endY))
-
-                ptvsd.break_into_debugger()
     
                 # add the tracker to our list of trackers so we can
                 # utilize it during skip frames

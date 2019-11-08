@@ -7,10 +7,13 @@ import random
 import sys
 import time
 import json
+
 try:
     import ptvsd
     __myDebug__ = True 
-    ptvsd.enable_attach(('0.0.0.0',  5678))   
+    ptvsd.enable_attach(('0.0.0.0',  5678))
+    print("Please attach debugger!")
+    ptvsd.wait_for_attach()
 except ImportError:
     __myDebug__ = False
     
@@ -113,26 +116,15 @@ class HubManager(object):
             verbose):
 
         # Communicate with the Edge Hub
-
-        self.messageTimeout = messageTimeout
-        self.client_protocol = protocol
-        self.client = IoTHubModuleClient()
-        self.client.create_from_environment(protocol)
-        self.client.set_option("messageTimeout", self.messageTimeout)
-        self.client.set_option("product_info","edge-security-system")
-        if verbose:
-            self.client.set_option("logtrace", 1)#enables MQTT logging
-
-        self.client.set_module_twin_callback(
-            device_twin_callback, None)
-
+        self.noIoT = True
+        
     def send_reported_state(self, reported_state, size, user_context):
-        self.client.send_reported_state(
-            reported_state, size,
-            send_reported_state_callback, user_context)
+       # do nothing
+       print("send_reported_state called")
 
     def send_event_to_output(self, outputQueueName, event, send_context):
-        self.client.send_event_async(outputQueueName, event, send_confirmation_callback, send_context)
+        # do nothing
+       print("send_event_to_output called")        
 
 def main(
         videoPath ="",
@@ -140,7 +132,7 @@ def main(
         videoWidth = 0,
         videoHeight = 0,
         fontScale = 1.0,
-        inference = False,
+        inference = True,
         confidenceLevel = 0.8
         ):
 
@@ -158,7 +150,9 @@ def main(
                          fontScale,
                          inference,
                          confidenceLevel) as videoCapture:
-
+            if __myDebug__:
+                ptvsd.break_into_debugger()
+        
             try:
                 hubManager = HubManager(10000, IoTHubTransportProvider.MQTT, False)
                 AppState.init(hubManager)

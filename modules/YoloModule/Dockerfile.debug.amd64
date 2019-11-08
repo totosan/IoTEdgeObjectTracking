@@ -101,4 +101,4 @@ ADD /app/ .
 # Expose the port
 EXPOSE 80
 
-ENTRYPOINT [ "python3", "-u", "./main.py" ]
+ENTRYPOINT [ "python3", "-u", "./main_debug.py" ]

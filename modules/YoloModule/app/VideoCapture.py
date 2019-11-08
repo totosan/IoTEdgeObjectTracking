@@ -2,8 +2,15 @@
 from __future__ import division
 from __future__ import absolute_import
 
-import ptvsd
-
+try:
+    import ptvsd
+    __myDebug__ = True 
+    ptvsd.enable_attach(('0.0.0.0',  5678))   
+    print("Please attach debugger!")
+    ptvsd.wait_for_attach()
+except ImportError:
+    __myDebug__ = False
+    
 import cv2
 import numpy as np
 import requests
@@ -11,6 +18,8 @@ import time
 import json
 import os
 import signal
+import urllib.request as urllib2
+
 
 # Vision imports
 import ImageServer
@@ -46,6 +55,7 @@ class VideoCapture(object):
         self.inference = inference
         self.confidenceLevel = confidenceLevel
         self.useStream = False
+        self.useStreamHttp = False
         self.useMovieFile = False
         self.frameCount = 0
         self.vStream = None
@@ -53,6 +63,8 @@ class VideoCapture(object):
         self.displayFrame = None
         self.fontScale = float(fontScale)
         self.captureInProgress = False
+        self.imageResp = None
+        self.url = ""
 
         print("VideoCapture::__init__()")
         print("OpenCV Version : %s" % (cv2.__version__))
@@ -79,7 +91,9 @@ class VideoCapture(object):
 
     def __IsHttp(self, videoPath):
         try:
-            return True
+            if "http" in videoPath and ":8080" in videoPath:
+                return True
+            return False
         except:
             return False
 
@@ -140,7 +154,12 @@ class VideoCapture(object):
             time.sleep(1.0)
             self.captureInProgress = True
 
-        # elif self.__IsHttp(newVideoPath):
+        elif self.__IsHttp(newVideoPath):
+            print("IsHttp")
+            # Use urllib to get the image and convert into a cv2 usable format
+            self.url = newVideoPath
+            self.useStreamHttp = True
+            self.captureInProgress = True
 
         elif self.__IsYoutube(newVideoPath):
             print("\r\n===> YouTube Video Source")
@@ -233,12 +252,18 @@ class VideoCapture(object):
         frameH = 0
         frameW = 0
 
+        if __myDebug__:
+            ptvsd.break_into_debugger()
+        
         if self.useStream and self.vStream:
             cameraH = int(self.vStream.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
             cameraW = int(self.vStream.stream.get(cv2.CAP_PROP_FRAME_WIDTH))
         elif self.useStream == False and self.vCapture:
             cameraH = int(self.vCapture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             cameraW = int(self.vCapture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        elif self.useStreamHttp == True:
+            cameraW = 1280
+            cameraH = 960
         else:
             print("Error : No Video Source")
             return
@@ -265,13 +290,14 @@ class VideoCapture(object):
         # Check camera's FPS
         if self.useStream:
             cameraFPS = int(self.vStream.stream.get(cv2.CAP_PROP_FPS))
+        elif self.useStreamHttp:
+            cameraFPS = 30
         else:
             cameraFPS = int(self.vCapture.get(cv2.CAP_PROP_FPS))
 
         if cameraFPS == 0:
             print("Error : Could not get FPS")
             raise Exception("Unable to acquire FPS for Video Source")
-            return
 
         print("Frame rate (FPS)     : " + str(cameraFPS))
 
@@ -301,6 +327,12 @@ class VideoCapture(object):
                     signal.alarm(10)
                     frame = self.vStream.read()
                     signal.alarm(0)
+                    
+                elif self.useStreamHttp:
+                    self.imageResp = urllib2.urlopen(self.url)
+                    imgNp = np.array(bytearray(self.imageResp.read()),dtype=np.uint8)
+                    frame = cv2.imdecode(imgNp,-1)
+                    
                 else:
                     frame = self.vCapture.read()[1]
             except Exception as e:
@@ -310,8 +342,6 @@ class VideoCapture(object):
             # Resize frame if flagged
             if needResizeFrame:
                 frame = cv2.resize(frame, (self.videoW, self.videoH))
-
-            #ptvsd.break_into_debugger()
 
             # Run Object Detection -- GUARD
             if self.inference:
@@ -334,11 +364,11 @@ class VideoCapture(object):
 
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
 
-            if (1000 / cameraFPS) > timeElapsedInMs:
+            if False and (1000 / cameraFPS) > timeElapsedInMs:
                 # This is faster than image source (e.g. camera) can feed.
                 waitTimeBetweenFrames = perFrameTimeInMs - timeElapsedInMs
                 # if self.verbose:
-                #     print("  Wait time between frames :" + str(int(waitTimeBetweenFrames)))
+                print("  Wait time between frames :" + str(int(waitTimeBetweenFrames)))
                 time.sleep(waitTimeBetweenFrames/1000.0)
 
     def __exit__(self, exception_type, exception_value, traceback):
