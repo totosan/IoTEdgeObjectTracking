@@ -15,7 +15,6 @@ from pyimagesearch.trackableobject import TrackableObject
 from pyimagesearch.trackerExt import TrackerExt
 from imutils.video import VideoStream
 from imutils.video import FPS
-import urllib.request as urllib2
 import numpy as np
 import argparse
 import imutils
@@ -23,22 +22,17 @@ import time
 import dlib
 import cv2
 
+try:
+    import ptvsd
+    __myDebug__ = True    
+except ImportError:
+    __myDebug__ = False
+
 
 class DetectAndTrack():
-    def __init__(self):
-        self.SKIP_FRAMES = 10
-        self.CONFIDENCE_LIMIT = 0.4
-        
-        # initialize the list of class labels MobileNet SSD was trained to
-        # detect
-        self.CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-            "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-            "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-            "sofa", "train", "tvmonitor"]
-               
-        # load our serialized model from disk
-        print("[INFO] loading model...")
-        self.net = cv2.dnn.readNetFromCaffe("mobilenet_ssd/MobileNetSSD_deploy.prototxt", "mobilenet_ssd/MobileNetSSD_deploy.caffemodel")
+    def __init__(self, skipFrame=10, confidence=0.4):
+        self.SKIP_FRAMES = skipFrame
+        self.CONFIDENCE_LIMIT = confidence
 
         # initialize the frame dimensions (we'll set them as soon as we read
         # the first frame from the video)
@@ -48,7 +42,7 @@ class DetectAndTrack():
         # instantiate our centroid tracker, then initialize a list to store
         # each of our dlib correlation trackers, followed by a dictionary to
         # map each unique object ID to a TrackableObject
-        self.ct = CentroidTracker(maxDisappeared=40, maxDistance=50)
+        self.ct = CentroidTracker(maxDisappeared=20, maxDistance=50)
         self.trackers = []
         self.trackableObjects = {}
 
@@ -61,15 +55,12 @@ class DetectAndTrack():
         # start the frames per second throughput estimator
         self.fps = FPS().start()
 
-    def doStuff(self, frame, W, H):
-        # grab the next frame and handle if we are reading from either
-        # VideoCapture or VideoStream
-#        frame = self.vs.read()
-        
+    def doStuff(self, frame, W, H, yoloDetections ):
+
         # resize the frame to have a maximum width of 500 pixels (the
         # less data we have, the faster we can process it), then convert
         # the frame from BGR to RGB for dlib
-        frame = imutils.resize(frame, width=500)
+        #frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # if the frame dimensions are empty, set them
@@ -88,56 +79,35 @@ class DetectAndTrack():
             # set the status and initialize our new set of object trackers
             status = "Detecting"
             self.trackers = []
-        
-            # convert the frame to a blob and pass the blob through the
-            # network and obtain the detections
-            #blob = cv2.dnn.blobFromImage(image, scalefactor=1.0, size, mean, swapRB=True)
-            blob = cv2.dnn.blobFromImage(frame, 0.007843, (W, H), 127.5)
-            self.net.setInput(blob)
-            detections = self.net.forward()
 
             # loop over the detections
-            for i in np.arange(0, detections.shape[2]):
-                # extract the confidence (i.e., probability) associated
-                # with the prediction
-                confidence = detections[0, 0, i, 2]
-                class_type = "unknown"
+            for detection in yoloDetections:
+                class_type = detection.classType
 
-                # filter out weak detections by requiring a minimum
-                # confidence
-                if confidence > self.CONFIDENCE_LIMIT:
-                    # extract the index of the class label from the
-                    # detections list
-                    idx = int(detections[0, 0, i, 1])
+                # compute the (x, y)-coordinates of the bounding box
+                # for the object
+                box = detection.box[0:4] * np.array([1, 1, 1, 1])
+                (startX, startY, endX, endY) = box.astype("int")
 
-                    # if the class label is not a person, ignore it
-                    #if CLASSES[idx] != "car":
-                    #	continue
-                    
-                    class_type = self.CLASSES[idx]
-                    
-                    # compute the (x, y)-coordinates of the bounding box
-                    # for the object
-                    box = detections[0, 0, i, 3:7] * np.array([W, H, W, H])
-                    (startX, startY, endX, endY) = box.astype("int")
+                # construct a dlib rectangle object from the bounding
+                # box coordinates and then start the dlib correlation
+                # tracker
+                tracker = dlib.correlation_tracker()
+                rect = dlib.rectangle(startX, startY, endX, endY)
 
-                    # construct a dlib rectangle object from the bounding
-                    # box coordinates and then start the dlib correlation
-                    # tracker
-                    tracker = dlib.correlation_tracker()
-                    rect = dlib.rectangle(startX, startY, endX, endY)
-                    
-                    if __debug__:
-                        cv2.rectangle(frame,(startX,startY),(endX,endY),(0,240,0),1)
-                        cv2.putText(frame,class_type,(startX,startY),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    
-                    tracker.start_track(rgb, rect)
+                if __myDebug__:
+                    cv2.rectangle(frame, (startX, startY),
+                                    (endX, endY), (0, 0, 0), 1)
+                    cv2.putText(frame, class_type, (startX, startY),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                    container = TrackerExt(class_type,tracker)
+                tracker.start_track(rgb, rect)
 
-                    # add the tracker to our list of trackers so we can
-                    # utilize it during skip frames
-                    self.trackers.append(container)
+                container = TrackerExt(class_type, tracker, (startX,startY,endX,endY))
+    
+                # add the tracker to our list of trackers so we can
+                # utilize it during skip frames
+                self.trackers.append(container)
 
         # otherwise, we should utilize our object *trackers* rather than
         # object *detectors* to obtain a higher frame processing throughput
@@ -163,10 +133,17 @@ class DetectAndTrack():
                 # add the bounding box coordinates to the rectangles list
                 rects.append(trackerContainer.rect)
 
+                if __myDebug__:
+                    cv2.rectangle(frame, (startX, startY),
+                                    (endX, endY), (0, 0, 0), 2)
+                    cv2.putText(frame, trackerContainer.class_type, (startX, startY),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        extractedRects = [trackerContainer for trackerContainer in self.trackers]
-            
+        extractedRects = [
+            trackerContainer for trackerContainer in self.trackers]
+
         objects = self.ct.update(extractedRects)
 
         # loop over the tracked objects
@@ -217,8 +194,9 @@ class DetectAndTrack():
             # object on the output frame
             text = "ID {}, {}".format(objectID, to.type)
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.circle(
+                frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
 
         # construct a tuple of information we will be displaying on the
         # frame
@@ -230,7 +208,7 @@ class DetectAndTrack():
         for (i, (k, v)) in enumerate(info):
             text = "{}: {}".format(k, v)
             cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
         # show the output frame
         #cv2.imshow("Frame", frame)
@@ -240,4 +218,3 @@ class DetectAndTrack():
         # then update the FPS counter
         self.totalFrames += 1
         self.fps.update()
-        return frame
