@@ -61,10 +61,13 @@
               "image": "${MODULES.YoloModule.test-amd64}",
               "createOptions": {
                 "Env": [
-                  "VIDEO_PATH=http://192.168.0.128:8080/shot.jpg",
+                  "VIDEO_PATH=https://youtu.be/TFfDA_oHDpg",
                   "VIDEO_WIDTH=640",
                   "VIDEO_HEIGHT=480",
-                  "FONT_SCALE=0.5"
+                  "FONT_SCALE=0.5",
+                  "DEBUG=True",
+                  "DETECTION_SAMPLE_RATE=2",
+                  "CONFIDENCE_LEVEL=0.3"
                 ],
                 "HostConfig": {
                   "Devices": [
@@ -84,6 +87,35 @@
                 }
               }
             }
+          },
+          "PostCarModule": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULES.PostcarDetector.debug-amd64}",
+              "createOptions": {
+                "Env": [
+                ],
+                "HostConfig": {
+                  "Devices": [
+                  ],
+                  "PortBindings": {
+                    "5679/tcp": [
+                      {
+                        "HostPort": "5679"
+                      }
+                    ],
+                    "8081/tcp": [
+                      {
+                        "HostPort": "8081"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -92,7 +124,8 @@
       "properties.desired": {
         "schemaVersion": "1.0",
         "routes": {
-          "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/* INTO $upstream"
+          "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/outputs1 INTO $upstream",
+          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/outputs2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

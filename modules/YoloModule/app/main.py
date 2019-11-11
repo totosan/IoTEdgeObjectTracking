@@ -7,6 +7,9 @@ import random
 import sys
 import time
 import json
+import argparse
+from netifaces import interfaces, ifaddresses, AF_INET
+
 try:
     import ptvsd
     __myDebug__ = True 
@@ -31,7 +34,7 @@ import VideoCapture
 from VideoCapture import VideoCapture
 
 import AppState
-
+    
 def send_to_Hub_callback(strMessage):
     message = IoTHubMessage(bytearray(strMessage, 'utf8'))
     print("\r\nsend_to_Hub_callback()")
@@ -79,21 +82,30 @@ def device_twin_callback(update_state, payload, user_context):
         print("   - VideoSource     : " + strUrl)
         if strUrl.lower() != videoCapture.videoPath.lower() and strUrl != "":
             videoCapture.setVideoSource(strUrl)
+    
+    if "DetectionSampleRate" in jsonData:
+        print("   - Detect. rate    : " + str(jsonData['DetectionSampleRate']))
+        if jsonData['DetectionSampleRate'] > 0:
+            videoCapture.detectionSampleRate = int(jsonData['DetectionSampleRate'])
+        
 
     device_twin_send_reported(hubManager)
 
 def device_twin_send_reported(hubManager):
     global videoCapture
 
-    jsonTemplate = "{\"ConfidenceLevel\": \"%s\",\"VerboseMode\": %d,\"Inference\": %d, \"VideoSource\":\"%s\"}"
+    jsonTemplate = "{\"ConfidenceLevel\": \"%s\",\"VerboseMode\": %d,\"Inference\": %d, \"VideoSource\":\"%s\", \"DetectionSampleRate\": %d, \"LocalIPs\":\"%s\"}"
 
     strUrl = videoCapture.videoPath
-
+    hostips = ip4_addresses()
     jsonData = jsonTemplate % (
         str(videoCapture.confidenceLevel),
         videoCapture.verbose,
         videoCapture.inference,
-        strUrl)
+        strUrl,
+        videoCapture.detectionSampleRate,
+        hostips
+        )
 
     print("\r\ndevice_twin_send_reported()")
     print("   - payload : \r\n%s" % json.dumps(jsonData, indent=4))
@@ -103,6 +115,14 @@ def device_twin_send_reported(hubManager):
 def send_reported_state_callback(status_code, user_context):
     print("\r\nsend_reported_state_callback()")
     print("   - status_code : [%d]" % (status_code) )
+
+
+def ip4_addresses():
+    ip_list = []
+    for interface in interfaces():
+        for link in ifaddresses(interface)[AF_INET]:
+            ip_list.append(link['addr'])
+    return ip_list
 
 class HubManager(object):
 
@@ -128,20 +148,43 @@ class HubManager(object):
 
     def send_reported_state(self, reported_state, size, user_context):
         self.client.send_reported_state(
-            reported_state, size,
-            send_reported_state_callback, user_context)
+        reported_state, size,
+        send_reported_state_callback, user_context)
+            
 
     def send_event_to_output(self, outputQueueName, event, send_context):
         self.client.send_event_async(outputQueueName, event, send_confirmation_callback, send_context)
 
+            
+class HubManagerStub(object):
+    
+    def __init__(
+            self,
+            messageTimeout,
+            protocol,
+            verbose):
+
+        # Communicate with the Edge Hub
+
+        self.messageTimeout = messageTimeout
+        self.client_protocol = protocol
+
+    def send_reported_state(self, reported_state, size, user_context):
+        print("send_reported_state called")
+
+    def send_event_to_output(self, outputQueueName, event, send_context):
+        print("send_event_to_output called")
+
 def main(
         videoPath ="",
         verbose = False,
+        debug = False,
         videoWidth = 0,
         videoHeight = 0,
         fontScale = 1.0,
         inference = False,
-        confidenceLevel = 0.8
+        confidenceLevel = 0.8,
+        detectionSampleRate = 10
         ):
 
     global hubManager
@@ -157,10 +200,14 @@ def main(
                          videoHeight,
                          fontScale,
                          inference,
-                         confidenceLevel) as videoCapture:
+                         confidenceLevel,
+                         detectionSampleRate) as videoCapture:
 
             try:
-                hubManager = HubManager(10000, IoTHubTransportProvider.MQTT, False)
+                if debug:
+                    hubManager = HubManagerStub(10000, IoTHubTransportProvider.MQTT, False)
+                else:
+                    hubManager = HubManager(10000, IoTHubTransportProvider.MQTT, False)
                 AppState.init(hubManager)
             except IoTHubError as iothub_error:
                 print("Unexpected error %s from IoTHub" % iothub_error )
@@ -183,18 +230,21 @@ def __convertStringToBool(env):
 if __name__ == '__main__':
     try:
         VIDEO_PATH = os.environ['VIDEO_PATH']
+        DEBUG = __convertStringToBool(os.getenv('DEBUG','False'))
         VERBOSE = __convertStringToBool(os.getenv('VERBOSE', 'False'))
         VIDEO_WIDTH = int(os.getenv('VIDEO_WIDTH', 0))
         VIDEO_HEIGHT = int(os.getenv('VIDEO_HEIGHT',0))
         FONT_SCALE = os.getenv('FONT_SCALE', 1)
-        INFERENCE = __convertStringToBool(os.getenv('INFERENCE', 'False'))
+        INFERENCE = __convertStringToBool(os.getenv('INFERENCE', 'True'))
         CONFIDENCE_LEVEL = float(os.getenv('CONFIDENCE_LEVEL', "0.8"))
+        DETECTION_SAMPLE_RATE = int(os.getenv('DETECTION_SAMPLE_RATE',10))
+
 
     except ValueError as error:
         print(error )
         sys.exit(1)
-
-    main(VIDEO_PATH, VERBOSE, VIDEO_WIDTH, VIDEO_HEIGHT, FONT_SCALE, INFERENCE, CONFIDENCE_LEVEL)
+        
+    main(VIDEO_PATH, VERBOSE, DEBUG, VIDEO_WIDTH, VIDEO_HEIGHT, FONT_SCALE, INFERENCE, CONFIDENCE_LEVEL, DETECTION_SAMPLE_RATE)
 
 
 

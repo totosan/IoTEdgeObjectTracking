@@ -54,7 +54,6 @@ RUN cp /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
 COPY /build/requirements.txt ./
 RUN pip3 install --upgrade pip
 
-RUN pip3 install -v -r requirements.txt
 RUN pip3 install tornado==4.5.3 trollius 
 
 RUN apt-get update && \
@@ -65,6 +64,8 @@ RUN git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git && \
     cd youtube-dl && \
     make && \
     make install
+
+RUN pip3 install -v -r requirements.txt
 
 ADD /app/ .
 

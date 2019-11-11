@@ -11,8 +11,8 @@ import json
 try:
     import ptvsd
     __myDebug__ = True 
-    ptvsd.enable_attach(('0.0.0.0',  5678))
     print("Please attach debugger!")
+    ptvsd.enable_attach(('0.0.0.0',  5678))
     ptvsd.wait_for_attach()
 except ImportError:
     __myDebug__ = False
@@ -181,7 +181,7 @@ if __name__ == '__main__':
         VIDEO_WIDTH = int(os.getenv('VIDEO_WIDTH', 0))
         VIDEO_HEIGHT = int(os.getenv('VIDEO_HEIGHT',0))
         FONT_SCALE = os.getenv('FONT_SCALE', 1)
-        INFERENCE = __convertStringToBool(os.getenv('INFERENCE', 'False'))
+        INFERENCE = __convertStringToBool(os.getenv('INFERENCE', 'True'))
         CONFIDENCE_LEVEL = float(os.getenv('CONFIDENCE_LEVEL', "0.8"))
 
     except ValueError as error:

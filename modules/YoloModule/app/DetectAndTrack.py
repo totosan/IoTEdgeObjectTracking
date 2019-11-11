@@ -1,13 +1,11 @@
-# USAGE - has to be fit
-# To read and write back out to video:
-# python people_counter.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt \
-#	--model mobilenet_ssd/MobileNetSSD_deploy.caffemodel --input videos/example_01.mp4 \
-#	--output output/output_01.avi
-#
-# To read from webcam and write back out to disk:
-# python people_counter.py --prototxt mobilenet_ssd/MobileNetSSD_deploy.prototxt \
-#	--model mobilenet_ssd/MobileNetSSD_deploy.caffemodel \
-#	--output output/webcam_output.avi
+import AppState
+
+import iothub_client
+# pylint: disable=E0611
+# Disabling linting that is not supported by Pylint for C extensions such as iothub_client. See issue https://github.com/PyCQA/pylint/issues/1955
+from iothub_client import (IoTHubMessage)
+import jsonpickle as jsonP
+import jsonpickle.ext.numpy as jsonpickle_numpy
 
 # import the necessary packages
 from pyimagesearch.centroidtracker import CentroidTracker
@@ -54,11 +52,33 @@ class DetectAndTrack():
 
         # start the frames per second throughput estimator
         self.fps = FPS().start()
+        
+        # init other
+        jsonpickle_numpy.register_handlers()
+
+
+    def __sendToHub__(self, trackingObject, rect):
+        #strMessage = jsonP.encode(trackingObject, unpicklable=False)                            
+        strTemplateFull = "{\"class\":\"%s\",\"Data\":{\"objectNr\":%d,\"centroids\":%s,\"clipregion\":\"%s\"}}"
+        strTemplateLight = "{\"class\":\"%s\",\"objectId\":%d}"
+        strMessageIoTHub = strTemplateLight % (
+            trackingObject.type,
+            trackingObject.objectID,
+        )
+        strMessageModule = strTemplateFull % (
+            trackingObject.type,
+            trackingObject.objectID,
+            np.array(trackingObject.centroids).tolist(),
+            rect
+        )
+
+        messageIoTHub = IoTHubMessage(strMessageIoTHub)
+        messageModule = IoTHubMessage(strMessageModule)
+        AppState.HubManager.send_event_to_output("output1", messageIoTHub, 0)
+        AppState.HubManager.send_event_to_output("output2", messageModule, 0)
 
     def doStuff(self, frame, W, H, yoloDetections ):
 
-        # resize the frame to have a maximum width of 500 pixels (the
-        # less data we have, the faster we can process it), then convert
         # the frame from BGR to RGB for dlib
         #frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -141,24 +161,25 @@ class DetectAndTrack():
 
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        extractedRects = [
-            trackerContainer for trackerContainer in self.trackers]
+        extractedRects = [trackerContainer for trackerContainer in self.trackers]
 
         objects = self.ct.update(extractedRects)
 
         # loop over the tracked objects
-        for (objectID, centroidTupel) in objects.items():
+        for (objectID, centroidTrackerData) in objects.items():
             # check to see if a trackable object exists for the current
             # object ID
             to = self.trackableObjects.get(objectID, None)
 
-            centroid = centroidTupel[0]
-            className = centroidTupel[1]
+            centroid = centroidTrackerData[0]
+            className = centroidTrackerData[1]
+            rect = centroidTrackerData[2]
 
             # if there is no existing trackable object, create one
             if to is None:
                 to = TrackableObject(objectID, className, centroid)
-
+                self.__sendToHub__(to, rect)
+                            
             # otherwise, there is a trackable object so we can utilize it
             # to determine direction
             else:
@@ -186,7 +207,7 @@ class DetectAndTrack():
                     elif direction > 0 and centroid[1] > H // 2:
                         self.totalDown += 1
                         to.counted = True
-
+                
             # store the trackable object in our dictionary
             self.trackableObjects[objectID] = to
 
@@ -198,21 +219,6 @@ class DetectAndTrack():
             cv2.circle(
                 frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
 
-        # construct a tuple of information we will be displaying on the
-        # frame
-        info = [
-            ("Status", status),
-        ]
-
-        # loop over the info tuples and draw them on our frame
-        for (i, (k, v)) in enumerate(info):
-            text = "{}: {}".format(k, v)
-            cv2.putText(frame, text, (10, H - ((i * 20) + 20)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
-
-        # show the output frame
-        #cv2.imshow("Frame", frame)
-        #key = cv2.waitKey(1) & 0xFF
 
         # increment the total number of frames processed thus far and
         # then update the FPS counter

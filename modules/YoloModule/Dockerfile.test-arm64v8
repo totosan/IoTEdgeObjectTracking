@@ -50,18 +50,15 @@ COPY --from=iot-sdk-python-builder /usr/sdk/src/device/samples/iothub_client.so 
 
 RUN cp /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
 
-COPY /build/requirements.txt ./
 COPY /build/pip-cache/* /root/.cache/pip/
 
 RUN pip3 install --upgrade pip
 
 RUN pip3 install tornado==4.5.3 \
     trollius \
-    scipy numpy
+    scipy==1.3.1 numpy==1.13.3
 RUN pip3 install /root/.cache/pip/dlib-19.18.0-cp36-cp36m-linux_aarch64.whl
 RUN pip3 install /root/.cache/pip/imutils-0.5.3-py3-none-any.whl 
-
-RUN pip3 install -v -r requirements.txt
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends zip pandoc && \
@@ -71,6 +68,9 @@ RUN git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git && \
     cd youtube-dl && \
     make && \
     make install
+
+COPY /build/requirements.txt ./
+RUN pip3 install -v -r requirements.txt
 
 ADD /app/ .
 
