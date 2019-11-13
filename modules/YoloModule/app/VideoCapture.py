@@ -144,6 +144,7 @@ class VideoCapture(object):
             print("\r\n===> RTSP Video Source")
 
             self.useStream = True
+            self.useStreamHttp = False
             self.useMovieFile = False
             self.videoPath = newVideoPath
 
@@ -165,11 +166,14 @@ class VideoCapture(object):
             # Use urllib to get the image and convert into a cv2 usable format
             self.url = newVideoPath
             self.useStreamHttp = True
+            self.useStream = False
+            self.useMovieFile = False
             self.captureInProgress = True
 
         elif self.__IsYoutube(newVideoPath):
             print("\r\n===> YouTube Video Source")
             self.useStream = False
+            self.useStreamHttp = False
             self.useMovieFile = True
             # This is video file
             self.downloadVideo(newVideoPath)
@@ -193,6 +197,7 @@ class VideoCapture(object):
             self.videoPath = newVideoPath
             self.useMovieFile = False
             self.useStream = False
+            self.useStreamHttp = False
             self.vCapture = cv2.VideoCapture(newVideoPath)
             if self.vCapture.isOpened():
                 self.captureInProgress = True
@@ -319,6 +324,7 @@ class VideoCapture(object):
             tFrameStart = time.time()
             detectionTracker.SKIP_FRAMES = self.detectionSampleRate
             if not self.captureInProgress:
+                print("broke frame processing for new videosource...")
                 break
 
             if self.useMovieFile:

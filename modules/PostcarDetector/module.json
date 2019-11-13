@@ -6,6 +6,7 @@
     "tag": {
       "version": "$CONTAINER_MODULE_VERSION",
       "platforms": {
+        "arm64v8": "./Dockerfile.arm64",
         "debug-amd64": "./Dockerfile.debug.amd64"
       }
     },

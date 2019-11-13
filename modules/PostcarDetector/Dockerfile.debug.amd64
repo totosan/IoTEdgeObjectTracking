@@ -6,10 +6,13 @@ RUN pip install numpy==1.16 tensorflow==1.13.1 --extra-index-url 'https://www.pi
 #RUN pip install flask pillow --index-url 'https://www.piwheels.org/simple'
 RUN pip install flask pillow 
 
+COPY requirements.txt ./
+RUN pip install -r requirements.txt
+
 COPY app /app
 
 # Expose the port
-EXPOSE 8081
+EXPOSE 80
 
 # Set the working directory
 WORKDIR /app
