@@ -6,6 +6,7 @@ import time
 import os
 import sys
 import asyncio
+import json
 from six.moves import input
 import threading
 from azure.iot.device.aio import IoTHubModuleClient
@@ -27,7 +28,8 @@ async def main():
             while True:
                 input_message = await module_client.receive_message_on_input("input1")  # blocking call
                 print("the data in the message received on input1 was ")
-                print(input_message.data)
+                message = json.loads(input_message.data)
+                print(f'Class: {message["class"]}')
                 print("custom properties are")
                 print(input_message.custom_properties)
                 print("forwarding mesage to output1")
@@ -36,18 +38,10 @@ async def main():
         # define behavior for halting the application
         def stdin_listener():
             while True:
-                try:
-                    selection = input("Press Q to quit\n")
-                    if selection == "Q" or selection == "q":
-                        print("Quitting...")
-                        break
-                except:
-                    time.sleep(10)
+                time.sleep(10)
 
         # Schedule task for C2D Listener
         listeners = asyncio.gather(input1_listener(module_client))
-
-        print ( "The sample is now waiting for messages. ")
 
         # Run the stdin listener in the event loop
         loop = asyncio.get_event_loop()

@@ -19,6 +19,7 @@ import imutils
 import time
 import dlib
 import cv2
+import base64
 
 try:
     import ptvsd
@@ -57,9 +58,9 @@ class DetectAndTrack():
         jsonpickle_numpy.register_handlers()
 
 
-    def __sendToHub__(self, trackingObject, rect):
-        #strMessage = jsonP.encode(trackingObject, unpicklable=False)                            
-        strTemplateFull = "{\"class\":\"%s\",\"Data\":{\"objectNr\":%d,\"centroids\":%s,\"clipregion\":\"%s\"}}"
+    def __sendToHub__(self, trackingObject, rect, frame):
+        imageBytes = base64.b64encode(frame)
+        strTemplateFull = "{\"class\":\"%s\",\"Data\":{\"objectNr\":%d,\"centroids\":%s,\"clipregion\":\"%s\",\"imagedata\":%s}}"
         strTemplateLight = "{\"class\":\"%s\",\"objectId\":%d}"
         strMessageIoTHub = strTemplateLight % (
             trackingObject.type,
@@ -69,7 +70,8 @@ class DetectAndTrack():
             trackingObject.type,
             trackingObject.objectID,
             np.array(trackingObject.centroids).tolist(),
-            rect
+            rect,
+            imageBytes
         )
 
         messageIoTHub = IoTHubMessage(strMessageIoTHub)

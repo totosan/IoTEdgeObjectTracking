@@ -124,8 +124,8 @@
       "properties.desired": {
         "schemaVersion": "1.0",
         "routes": {
-          "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/outputs1 INTO $upstream",
-          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/outputs2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")"
+          "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/output1 INTO $upstream",
+          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/output2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200
