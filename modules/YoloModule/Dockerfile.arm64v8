@@ -23,7 +23,7 @@ COPY --from=iot-sdk-python-builder /usr/sdk/src/build_all/linux/release_device_c
 RUN cd /src/build_all/linux/release_device_client && python3 setup.py install
 COPY --from=iot-sdk-python-builder /usr/sdk/src/device/samples/iothub_client.so /app/iothub_client.so
 
-RUN COPY --from=cuda-opencv-darknet /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
+RUN cp /usr/local/src/darknet/libdarknet.so /app/libdarknet.so
 
 COPY /build/requirements.txt ./
 COPY /build/pip-cache/* /root/.cache/pip/
