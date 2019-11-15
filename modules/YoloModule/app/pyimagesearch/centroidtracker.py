@@ -23,10 +23,10 @@ class CentroidTracker:
 		# distance we'll start to mark the object as "disappeared"
 		self.maxDistance = maxDistance
 
-	def register(self, centroid, objectType):
+	def register(self, centroid, objectType, rect):
 		# when registering an object we use the next available object
 		# ID to store the centroid
-		self.objects[self.nextObjectID] = (centroid, objectType)
+		self.objects[self.nextObjectID] = (centroid, objectType, rect)
 		self.disappeared[self.nextObjectID] = 0
 		self.nextObjectID += 1
 
@@ -70,7 +70,7 @@ class CentroidTracker:
 			# centroids and register each of them
 			if len(self.objects) == 0:
 				for i in range(0, len(inputCentroids)):
-					self.register(inputCentroids[i], rectContainer[i].class_type)
+					self.register(inputCentroids[i], rectContainer[i].class_type, rectContainer[i].rect)
 
 			# otherwise, are are currently tracking objects so we need to
 			# try to match the input centroids to existing object
@@ -122,7 +122,7 @@ class CentroidTracker:
 					# set its new centroid, and reset the disappeared
 					# counter
 					objectID = objectIDs[row]
-					self.objects[objectID] = (inputCentroids[col],self.objects[objectID][1])
+					self.objects[objectID] = (inputCentroids[col],self.objects[objectID][1], rectContainer[col].rect)
 					self.disappeared[objectID] = 0
 
 					# indicate that we have examined each of the row and
@@ -158,7 +158,7 @@ class CentroidTracker:
 				# register each new input centroid as a trackable object
 				else:
 					for col in unusedCols:
-						self.register(inputCentroids[col], rectContainer[col].class_type)
+						self.register(inputCentroids[col], rectContainer[col].class_type, rectContainer[col].rect)
 
 			# return the set of trackable objects
 			return self.objects

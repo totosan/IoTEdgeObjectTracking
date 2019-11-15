@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.0",
+            "version": "1.4.1",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -69,7 +69,11 @@
                   "VIDEO_PATH=$CONTAINER_VIDEO_SOURCE",
                   "VIDEO_WIDTH=640",
                   "VIDEO_HEIGHT=480",
-                  "FONT_SCALE=0.8"
+                  "FONT_SCALE=0.8",
+                  "NOIOTHUB=False",
+                  "DETECTION_SAMPLE_RATE=5",
+                  "CONFIDENCE_LEVEL=0.3",
+                  "IMAGE_PROCESSING_ENDPOINT=http://postcarmodule/image"
                 ],
                 "HostConfig": {
                   "Devices": [
@@ -122,6 +126,80 @@
                   "PortBindings": {
                     "80/tcp": [
                       {
+                        "HostPort": "8080"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "postcarmodule": {
+            "version": "1.1",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULES.PostcarDetector.arm64v8}",
+              "createOptions": {
+                "Env": [
+                ],
+                "HostConfig": {
+                  "Devices": [
+                    {
+                      "PathOnHost": "/dev/nvhost-ctrl",
+                      "PathInContainer":"/dev/nvhost-ctrl",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "/dev/nvhost-ctrl-gpu",
+                      "PathInContainer":"dev/nvhost-ctrl-gpu",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "/dev/nvhost-prof-gpu",
+                      "PathInContainer":"dev/nvhost-prof-gpu ",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "/dev/nvmap",
+                      "PathInContainer":"/dev/nvmap",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "dev/nvhost-gpu",
+                      "PathInContainer":"dev/nvhost-gpu",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "/dev/nvhost-as-gpu",
+                      "PathInContainer":"/dev/nvhost-as-gpu",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "/dev/nvhost-vic",
+                      "PathInContainer":"/dev/nvhost-vic",
+                      "CgroupPermissions":"rwm"
+                    },
+                    {
+                      "PathOnHost": "/dev/tegra_dc_ctrl",
+                      "PathInContainer":"/dev/tegra_dc_ctrl",
+                      "CgroupPermissions":"rwm"                      
+                    },
+                    {
+                       "PathOnHost": "/dev/video0",
+                       "PathInContainer":"/dev/video0",
+                       "CgroupPermissions":"rwm"                      
+                    }
+                 ],
+                  "PortBindings": {
+                    "5679/tcp": [
+                      {
+                        "HostPort": "5679"
+                      }
+                    ],
+                    "80/tcp": [
+                      {
                         "HostPort": "80"
                       }
                     ]
@@ -137,7 +215,8 @@
       "properties.desired": {
         "schemaVersion": "1.0",
         "routes": {
-          "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/* INTO $upstream"
+          "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/output1 INTO $upstream",
+          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/output2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

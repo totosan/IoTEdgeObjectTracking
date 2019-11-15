@@ -1,3 +1,5 @@
 requests
+jsonpickle
+netifaces
 #dlib
 #imutils

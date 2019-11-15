@@ -5,9 +5,9 @@ from __future__ import absolute_import
 try:
     import ptvsd
     __myDebug__ = True 
-    ptvsd.enable_attach(('0.0.0.0',  5678))   
     print("Please attach debugger!")
-    ptvsd.wait_for_attach()
+    ptvsd.enable_attach(('0.0.0.0',  5678))   
+    #ptvsd.wait_for_attach()
 except ImportError:
     __myDebug__ = False
     
@@ -46,7 +46,9 @@ class VideoCapture(object):
             videoH=0,
             fontScale=1.0,
             inference=True,
-            confidenceLevel=0.5):
+            confidenceLevel=0.5,
+            detectionSampleRate = 10,
+            imageProcessingEndpoint=""):
 
         self.videoPath = videoPath
         self.verbose = verbose
@@ -65,6 +67,8 @@ class VideoCapture(object):
         self.captureInProgress = False
         self.imageResp = None
         self.url = ""
+        self.detectionSampleRate = detectionSampleRate
+        self.imageProcessingEndpoint = imageProcessingEndpoint
 
         print("VideoCapture::__init__()")
         print("OpenCV Version : %s" % (cv2.__version__))
@@ -76,6 +80,8 @@ class VideoCapture(object):
         print("   - Font Scale      : " + str(self.fontScale))
         print("   - Inference?      : " + str(self.inference))
         print("   - ConficenceLevel : " + str(self.confidenceLevel))
+        print("   - Dct smpl rate   : " + str(self.detectionSampleRate))
+        print("   - Imageproc.Endpt.: " + str(self.imageProcessingEndpoint))
         print("")
 
         self.imageServer = ImageServer(80, self)
@@ -133,11 +139,15 @@ class VideoCapture(object):
             elif self.vStream:
                 self.vStream.stop()
                 self.vStream = None
+            elif self.imageResp:
+                self.imageResp.close()
+                self.imageResp = None
 
         if self.__IsRtsp(newVideoPath):
             print("\r\n===> RTSP Video Source")
 
             self.useStream = True
+            self.useStreamHttp = False
             self.useMovieFile = False
             self.videoPath = newVideoPath
 
@@ -159,11 +169,14 @@ class VideoCapture(object):
             # Use urllib to get the image and convert into a cv2 usable format
             self.url = newVideoPath
             self.useStreamHttp = True
+            self.useStream = False
+            self.useMovieFile = False
             self.captureInProgress = True
 
         elif self.__IsYoutube(newVideoPath):
             print("\r\n===> YouTube Video Source")
             self.useStream = False
+            self.useStreamHttp = False
             self.useMovieFile = True
             # This is video file
             self.downloadVideo(newVideoPath)
@@ -187,6 +200,7 @@ class VideoCapture(object):
             self.videoPath = newVideoPath
             self.useMovieFile = False
             self.useStream = False
+            self.useStreamHttp = False
             self.vCapture = cv2.VideoCapture(newVideoPath)
             if self.vCapture.isOpened():
                 self.captureInProgress = True
@@ -251,9 +265,6 @@ class VideoCapture(object):
         cameraW = 0
         frameH = 0
         frameW = 0
-
-        if __myDebug__:
-            ptvsd.break_into_debugger()
         
         if self.useStream and self.vStream:
             cameraH = int(self.vStream.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -306,13 +317,14 @@ class VideoCapture(object):
 
         signal.signal(signal.SIGALRM, self.videoStreamReadTimeoutHandler)
 
-        detectionTracker = DetectAndTrack(10, self.confidenceLevel)
+        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel, self.imageProcessingEndpoint)
         while True:
 
             # Get current time before we capture a frame
             tFrameStart = time.time()
-
+            detectionTracker.SKIP_FRAMES = self.detectionSampleRate
             if not self.captureInProgress:
+                print("broke frame processing for new videosource...")
                 break
 
             if self.useMovieFile:
@@ -378,8 +390,3 @@ class VideoCapture(object):
 
         self.imageServer.close()
         cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    video = VideoCapture("/dev/video0", videoH=480, videoW=640, fontScale=1.0)
-    video.start()

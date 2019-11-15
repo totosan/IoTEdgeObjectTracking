@@ -1,0 +1,15 @@
+# Build darknet 
+FROM ubuntu:18.04
+
+RUN apt-get update
+RUN apt-get install -y build-essential git
+
+# Get and compile darknet
+WORKDIR /src
+RUN git clone -n https://github.com/AlexeyAB/darknet.git
+WORKDIR /src/darknet
+RUN git checkout 4c315ea26b56c2bf20ebc240d94386c6e3cc83db
+RUN sed -i -e "s!OPENMP=0!OPENMP=1!g" Makefile && \
+    sed -i -e "s!AVX=0!AVX=1!g" Makefile && \
+    sed -i -e "s!LIBSO=0!LIBSO=1!g" Makefile && \
+    make
