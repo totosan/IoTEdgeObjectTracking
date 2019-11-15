@@ -8,6 +8,7 @@
       "platforms": {
         "arm32v7": "./Dockerfile.arm32v7",
         "arm64v8": "./Dockerfile.arm64v8",
+        "debug-arm64v8": "./Dockerfile.debug.arm64v8",
         "test-amd64": "./Dockerfile.debug.amd64"
       }
     },

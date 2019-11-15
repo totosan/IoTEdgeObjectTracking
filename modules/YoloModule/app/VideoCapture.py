@@ -47,7 +47,8 @@ class VideoCapture(object):
             fontScale=1.0,
             inference=True,
             confidenceLevel=0.5,
-            detectionSampleRate = 10):
+            detectionSampleRate = 10,
+            imageProcessingEndpoint=""):
 
         self.videoPath = videoPath
         self.verbose = verbose
@@ -67,6 +68,7 @@ class VideoCapture(object):
         self.imageResp = None
         self.url = ""
         self.detectionSampleRate = detectionSampleRate
+        self.imageProcessingEndpoint = imageProcessingEndpoint
 
         print("VideoCapture::__init__()")
         print("OpenCV Version : %s" % (cv2.__version__))
@@ -79,6 +81,7 @@ class VideoCapture(object):
         print("   - Inference?      : " + str(self.inference))
         print("   - ConficenceLevel : " + str(self.confidenceLevel))
         print("   - Dct smpl rate   : " + str(self.detectionSampleRate))
+        print("   - Imageproc.Endpt.: " + str(self.imageProcessingEndpoint))
         print("")
 
         self.imageServer = ImageServer(80, self)
@@ -262,9 +265,6 @@ class VideoCapture(object):
         cameraW = 0
         frameH = 0
         frameW = 0
-
-        if __myDebug__:
-            ptvsd.break_into_debugger()
         
         if self.useStream and self.vStream:
             cameraH = int(self.vStream.stream.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -317,7 +317,7 @@ class VideoCapture(object):
 
         signal.signal(signal.SIGALRM, self.videoStreamReadTimeoutHandler)
 
-        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel)
+        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel, self.imageProcessingEndpoint)
         while True:
 
             # Get current time before we capture a frame

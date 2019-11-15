@@ -63,7 +63,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULES.YoloModule.arm64v8}",
+              "image": "${MODULES.YoloModule.debug-arm64v8}",
               "createOptions": {
                 "Env": [
                   "VIDEO_PATH=$CONTAINER_VIDEO_SOURCE",
@@ -128,6 +128,11 @@
                       {
                         "HostPort": "8080"
                       }
+                    ],
+                    "5678/tcp": [
+                      {
+                        "HostPort": "5678"
+                      }
                     ]
                   }
                 }
@@ -191,7 +196,7 @@
                        "PathInContainer":"/dev/video0",
                        "CgroupPermissions":"rwm"                      
                     }
-                 ],
+                  ],
                   "PortBindings": {
                     "5679/tcp": [
                       {

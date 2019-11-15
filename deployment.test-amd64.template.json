@@ -67,7 +67,8 @@
                   "FONT_SCALE=0.5",
                   "NOIOTHUB=False",
                   "DETECTION_SAMPLE_RATE=2",
-                  "CONFIDENCE_LEVEL=0.3"
+                  "CONFIDENCE_LEVEL=0.3",
+                  "IMAGE_PROCESSING_ENDPOINT=http://postcarmodule/image"
                 ],
                 "HostConfig": {
                   "Devices": [

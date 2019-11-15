@@ -185,7 +185,8 @@ def main(
         fontScale = 1.0,
         inference = False,
         confidenceLevel = 0.8,
-        detectionSampleRate = 10
+        detectionSampleRate = 10,
+        imageProcessingEndpoint="",
         ):
 
     global hubManager
@@ -202,7 +203,8 @@ def main(
                          fontScale,
                          inference,
                          confidenceLevel,
-                         detectionSampleRate) as videoCapture:
+                         detectionSampleRate,
+                         imageProcessingEndpoint) as videoCapture:
 
             try:
                 if noIotHub:
@@ -239,13 +241,13 @@ if __name__ == '__main__':
         INFERENCE = __convertStringToBool(os.getenv('INFERENCE', 'True'))
         CONFIDENCE_LEVEL = float(os.getenv('CONFIDENCE_LEVEL', "0.8"))
         DETECTION_SAMPLE_RATE = int(os.getenv('DETECTION_SAMPLE_RATE',10))
-
+        IMAGE_PROCESSING_ENDPOINT = os.environ['IMAGE_PROCESSING_ENDPOINT']
 
     except ValueError as error:
         print(error )
         sys.exit(1)
         
-    main(VIDEO_PATH, VERBOSE, NOIOTHUB, VIDEO_WIDTH, VIDEO_HEIGHT, FONT_SCALE, INFERENCE, CONFIDENCE_LEVEL, DETECTION_SAMPLE_RATE)
+    main(VIDEO_PATH, VERBOSE, NOIOTHUB, VIDEO_WIDTH, VIDEO_HEIGHT, FONT_SCALE, INFERENCE, CONFIDENCE_LEVEL, DETECTION_SAMPLE_RATE, IMAGE_PROCESSING_ENDPOINT)
 
 
 

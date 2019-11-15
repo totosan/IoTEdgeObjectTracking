@@ -4,8 +4,6 @@ import iothub_client
 # pylint: disable=E0611
 # Disabling linting that is not supported by Pylint for C extensions such as iothub_client. See issue https://github.com/PyCQA/pylint/issues/1955
 from iothub_client import (IoTHubMessage)
-import jsonpickle as jsonP
-import jsonpickle.ext.numpy as jsonpickle_numpy
 
 # import the necessary packages
 from pyimagesearch.centroidtracker import CentroidTracker
@@ -20,18 +18,25 @@ import time
 import dlib
 import cv2
 import base64
+import requests
+import json
+import asyncio
 
 try:
     import ptvsd
-    __myDebug__ = True    
+    __myDebug__ = True
 except ImportError:
     __myDebug__ = False
 
 
 class DetectAndTrack():
-    def __init__(self, skipFrame=10, confidence=0.4):
+    def __init__(self,
+                 skipFrame=10,
+                 confidence=0.4,
+                 imageProcessingEndpoint=""):
         self.SKIP_FRAMES = skipFrame
         self.CONFIDENCE_LIMIT = confidence
+        self.imageProcessingEndpoint = imageProcessingEndpoint
 
         # initialize the frame dimensions (we'll set them as soon as we read
         # the first frame from the video)
@@ -53,36 +58,41 @@ class DetectAndTrack():
 
         # start the frames per second throughput estimator
         self.fps = FPS().start()
-        
-        # init other
-        jsonpickle_numpy.register_handlers()
 
+    def __getObjectDetails__(self, frame, clipregion):
+        x = clipregion[0]
+        y = clipregion[1]
+        x2 = clipregion[2]
+        y2 = clipregion[3]
 
-    def __sendToHub__(self, trackingObject, rect, frame):
-        imageBytes = base64.b64encode(frame)
-        strTemplateFull = "{\"class\":\"%s\",\"Data\":{\"objectNr\":%d,\"centroids\":%s,\"clipregion\":\"%s\",\"imagedata\":%s}}"
+        result = None        
+        clippedImage = frame[y:y2, x:x2].copy()
+        if clippedImage.any():
+            cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
+            try:
+                res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
+                                    headers={'Content-Type': 'application/octet-stream'})
+                result = json.loads(res.content)
+            except :
+                result = ""
+                print(f"Exception occured on calling 2nd AI Module.")
+            print(f"got from 2nd AI {result}")
+        return result
+
+    def __sendToIoTHub__(self, trackingObject, rect, frame):
         strTemplateLight = "{\"class\":\"%s\",\"objectId\":%d}"
         strMessageIoTHub = strTemplateLight % (
             trackingObject.type,
             trackingObject.objectID,
         )
-        strMessageModule = strTemplateFull % (
-            trackingObject.type,
-            trackingObject.objectID,
-            np.array(trackingObject.centroids).tolist(),
-            rect,
-            imageBytes
-        )
-
         messageIoTHub = IoTHubMessage(strMessageIoTHub)
-        messageModule = IoTHubMessage(strMessageModule)
         AppState.HubManager.send_event_to_output("output1", messageIoTHub, 0)
-        AppState.HubManager.send_event_to_output("output2", messageModule, 1)
 
-    def doStuff(self, frame, W, H, yoloDetections ):
+
+    def doStuff(self, frame, W, H, yoloDetections):
 
         # the frame from BGR to RGB for dlib
-        #frame = imutils.resize(frame, width=500)
+        # frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         # if the frame dimensions are empty, set them
@@ -119,14 +129,14 @@ class DetectAndTrack():
 
                 if __myDebug__:
                     cv2.rectangle(frame, (startX, startY),
-                                    (endX, endY), (0, 0, 0), 1)
+                                  (endX, endY), (0, 0, 0), 1)
                     cv2.putText(frame, class_type, (startX, startY),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
                 tracker.start_track(rgb, rect)
 
-                container = TrackerExt(class_type, tracker, (startX,startY,endX,endY))
-    
+                container = TrackerExt(class_type, tracker, (startX, startY,endX,endY))
+
                 # add the tracker to our list of trackers so we can
                 # utilize it during skip frames
                 self.trackers.append(container)
@@ -157,13 +167,14 @@ class DetectAndTrack():
 
                 if __myDebug__:
                     cv2.rectangle(frame, (startX, startY),
-                                    (endX, endY), (0, 0, 0), 2)
+                                  (endX, endY), (0, 0, 0), 2)
                     cv2.putText(frame, trackerContainer.class_type, (startX, startY),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        extractedRects = [trackerContainer for trackerContainer in self.trackers]
+        extractedRects = [
+            trackerContainer for trackerContainer in self.trackers]
 
         objects = self.ct.update(extractedRects)
 
@@ -180,8 +191,11 @@ class DetectAndTrack():
             # if there is no existing trackable object, create one
             if to is None:
                 to = TrackableObject(objectID, className, centroid)
-                self.__sendToHub__(to, rect, frame)
-                            
+                self.__sendToIoTHub__(to, rect, frame)
+                details = self.__getObjectDetails__(frame,rect)
+                if details and len(details)>0:
+                    print(f'{details["predictions"]} from CV.ai detected')
+
             # otherwise, there is a trackable object so we can utilize it
             # to determine direction
             else:
@@ -209,7 +223,7 @@ class DetectAndTrack():
                     elif direction > 0 and centroid[1] > H // 2:
                         self.totalDown += 1
                         to.counted = True
-                
+
             # store the trackable object in our dictionary
             self.trackableObjects[objectID] = to
 
@@ -220,7 +234,6 @@ class DetectAndTrack():
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
             cv2.circle(
                 frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
-
 
         # increment the total number of frames processed thus far and
         # then update the FPS counter
