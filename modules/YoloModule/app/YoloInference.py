@@ -15,7 +15,8 @@ from YoloDetection import YoloDetection
 try:
     import ptvsd
     __myDebug__ = True 
-    #ptvsd.enable_attach(('0.0.0.0',  5678))   
+    print("Attach debugger for module")
+    ptvsd.enable_attach(('0.0.0.0',  5678))   
 except ImportError:
     __myDebug__ = False
     

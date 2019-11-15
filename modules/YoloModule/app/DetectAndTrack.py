@@ -77,7 +77,7 @@ class DetectAndTrack():
         messageIoTHub = IoTHubMessage(strMessageIoTHub)
         messageModule = IoTHubMessage(strMessageModule)
         AppState.HubManager.send_event_to_output("output1", messageIoTHub, 0)
-        AppState.HubManager.send_event_to_output("output2", messageModule, 0)
+        AppState.HubManager.send_event_to_output("output2", messageModule, 1)
 
     def doStuff(self, frame, W, H, yoloDetections ):
 
@@ -180,7 +180,7 @@ class DetectAndTrack():
             # if there is no existing trackable object, create one
             if to is None:
                 to = TrackableObject(objectID, className, centroid)
-                self.__sendToHub__(to, rect)
+                self.__sendToHub__(to, rect, frame)
                             
             # otherwise, there is a trackable object so we can utilize it
             # to determine direction

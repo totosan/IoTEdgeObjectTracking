@@ -1,8 +1,0 @@
-requests
-cython
-imutil
-scipy
-moviepy
-sklearn
-ffmpeg
-azure-iothub-device-client~=1.4.3

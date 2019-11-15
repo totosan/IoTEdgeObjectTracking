@@ -114,14 +114,32 @@
               }
             }
           },
-          "SampleModule": {
+          "AzureBlobStorageonIoTEdge": {
             "version": "1.0",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULES.SampleModule}",
-              "createOptions": {}
+              "image": "mcr.microsoft.com/azure-blob-storage:latest",
+              "createOptions": {
+                "HostConfig": {
+                  "PortBindings": {
+                    "11002/tcp": [
+                      {
+                        "HostPort": "11002"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "env": {
+              "LOCAL_STORAGE_ACCOUNT_KEY": {
+                "value": "<Your local account key>"
+              },
+              "LOCAL_STORAGE_ACCOUNT_NAME": {
+                "value": "<Your local account name>"
+              }
             }
           }
         }
@@ -132,8 +150,7 @@
         "schemaVersion": "1.0",
         "routes": {
           "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/outputs1 INTO $upstream",
-          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/outputs2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")",
-          "SampleModuleToIoTHub": "FROM /messages/modules/SampleModule/outputs/* INTO $upstream"
+          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/outputs2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

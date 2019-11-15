@@ -2,6 +2,16 @@
 # Licensed under the MIT license. See LICENSE file in the project root for
 # full license information.
 
+try:
+    import ptvsd
+    __myDebug__ = True 
+    ptvsd.enable_attach(('0.0.0.0',  5679))
+    print("Debugging enabled in Postcardetector")
+    #ptvsd.wait_for_attach()
+except ImportError:
+    __myDebug__ = False
+    print("no debugging")
+
 import time
 import os
 import sys
@@ -12,6 +22,8 @@ import threading
 from azure.iot.device.aio import IoTHubModuleClient
 
 async def main():
+    ptvsd.break_into_debugger()
+    
     try:
         if not sys.version >= "3.5.3":
             raise Exception( "The sample requires python 3.5.3+. Current version of Python: %s" % sys.version )
@@ -28,6 +40,7 @@ async def main():
             while True:
                 input_message = await module_client.receive_message_on_input("input1")  # blocking call
                 print("the data in the message received on input1 was ")
+                ptvsd.break_into_debugger()
                 message = json.loads(input_message.data)
                 print(f'Class: {message["class"]}')
                 print("custom properties are")
@@ -61,6 +74,9 @@ async def main():
         raise
 
 if __name__ == "__main__":
+    print("Main function called")
+    ptvsd.break_into_debugger()
+    
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
     loop.close()

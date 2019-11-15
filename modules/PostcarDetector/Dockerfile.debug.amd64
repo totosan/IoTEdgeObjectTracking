@@ -1,4 +1,4 @@
-﻿FROM tensorflow/tensorflow:1.15.0-py3 as compile-image
+﻿FROM iotcontainertt.azurecr.io/jetson-tensorflow:0.1.0 as compile-image
 
 SHELL ["/bin/bash", "-c"]
 
@@ -25,7 +25,7 @@ COPY app /app
 COPY --from=compile-image /usr/local/lib/python3.6/dist-packages /usr/local/lib/python3.6/dist-packages
 COPY --from=compile-image /env3 /env3
 COPY --from=compile-image /root/.cache/pip/wheels /root/.cache/pip/wheels
-RUN PYTHONPATH=/usr/lib/python2.7/dist-packages
+
 
 SHELL ["/bin/bash", "-c"]
 
@@ -36,6 +36,7 @@ EXPOSE 80
 WORKDIR /app
 
 RUN source /env3/bin/activate
+RUN pip3 install ptvsd
 
 # Run the flask server for the endpoints
 CMD python3 main.py

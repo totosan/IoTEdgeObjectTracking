@@ -119,9 +119,10 @@ def send_reported_state_callback(status_code, user_context):
 
 def ip4_addresses():
     ip_list = []
-    for interface in interfaces():
-        for link in ifaddresses(interface)[AF_INET]:
-            ip_list.append(link['addr'])
+    if not __myDebug__:
+        for interface in interfaces():
+            for link in ifaddresses(interface)[AF_INET]:
+                ip_list.append(link['addr'])
     return ip_list
 
 class HubManager(object):
@@ -178,7 +179,7 @@ class HubManagerStub(object):
 def main(
         videoPath ="",
         verbose = False,
-        debug = False,
+        noIotHub = False,
         videoWidth = 0,
         videoHeight = 0,
         fontScale = 1.0,
@@ -204,7 +205,7 @@ def main(
                          detectionSampleRate) as videoCapture:
 
             try:
-                if debug:
+                if noIotHub:
                     hubManager = HubManagerStub(10000, IoTHubTransportProvider.MQTT, False)
                 else:
                     hubManager = HubManager(10000, IoTHubTransportProvider.MQTT, False)
@@ -230,7 +231,7 @@ def __convertStringToBool(env):
 if __name__ == '__main__':
     try:
         VIDEO_PATH = os.environ['VIDEO_PATH']
-        DEBUG = __convertStringToBool(os.getenv('DEBUG','False'))
+        NOIOTHUB = __convertStringToBool(os.getenv('NOIOTHUB','True'))
         VERBOSE = __convertStringToBool(os.getenv('VERBOSE', 'False'))
         VIDEO_WIDTH = int(os.getenv('VIDEO_WIDTH', 0))
         VIDEO_HEIGHT = int(os.getenv('VIDEO_HEIGHT',0))
@@ -244,7 +245,7 @@ if __name__ == '__main__':
         print(error )
         sys.exit(1)
         
-    main(VIDEO_PATH, VERBOSE, DEBUG, VIDEO_WIDTH, VIDEO_HEIGHT, FONT_SCALE, INFERENCE, CONFIDENCE_LEVEL, DETECTION_SAMPLE_RATE)
+    main(VIDEO_PATH, VERBOSE, NOIOTHUB, VIDEO_WIDTH, VIDEO_HEIGHT, FONT_SCALE, INFERENCE, CONFIDENCE_LEVEL, DETECTION_SAMPLE_RATE)
 
 
 

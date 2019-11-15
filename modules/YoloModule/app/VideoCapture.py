@@ -7,7 +7,7 @@ try:
     __myDebug__ = True 
     print("Please attach debugger!")
     ptvsd.enable_attach(('0.0.0.0',  5678))   
-    ptvsd.wait_for_attach()
+    #ptvsd.wait_for_attach()
 except ImportError:
     __myDebug__ = False
     
