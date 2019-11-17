@@ -1,4 +1,4 @@
-FROM balenalib/jetson-tx2-ubuntu:latest
+FROM arm64v8/ubuntu:bionic-20191029
 # The balena base image for building apps on Jetson Nano/TX2.
 
 RUN echo "BUILD MODULE: SpeechModule for JETSON NANO"
@@ -6,7 +6,7 @@ RUN echo "BUILD MODULE: SpeechModule for JETSON NANO"
 WORKDIR /app
 
 # Update package index and install dependencies
-RUN install_packages \
+RUN apt update && apt install -y \
     python3 \
     python3-pip \
     python3-dev \
@@ -33,4 +33,4 @@ COPY . .
 RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 
-ENTRYPOINT [ "python3", "-u", "./main.py" ]
+ENTRYPOINT [ "python3", "-u", "./app.py" ]

@@ -7,10 +7,10 @@ import time
 import os
 import sys
 import json
+import asyncio
+from azure.iot.device.aio import IoTHubModuleClient
 import iothub_client
-# pylint: disable=E0611
-from iothub_client import IoTHubModuleClient, IoTHubClientError, IoTHubTransportProvider
-from iothub_client import IoTHubMessage, IoTHubMessageDispositionResult, IoTHubError
+
 
 # messageTimeout - the maximum time in milliseconds until a message times out.
 # The timeout period starts at IoTHubModuleClient.send_event_async.
@@ -20,9 +20,6 @@ MESSAGE_TIMEOUT = 10000
 # global counters
 RECEIVE_CALLBACKS = 0
 SEND_CALLBACKS = 0
-
-# Choose HTTP, AMQP or MQTT as transport protocol.  Currently only MQTT is supported.
-PROTOCOL = IoTHubTransportProvider.MQTT
 
 # Callback received when the message that we're forwarding is processed.
 def send_confirmation_callback(message, result, user_context):
