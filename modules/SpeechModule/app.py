@@ -6,6 +6,7 @@ import time
 import os
 import sys
 import asyncio
+import json
 from six.moves import input
 import threading
 from azure.iot.device.aio import IoTHubModuleClient
@@ -43,8 +44,8 @@ async def main():
                     if prop["Name"]=="Auto":
                         print("Auto")
                         os.system("aplay sampleAuto.mp3")
-                except:
-                    print("Audio could not be played")
+                except NameError as err:
+                    print(f"Audio could not be played/ Exception: {err}")
                     
         # define behavior for halting the application
         def stdin_listener():

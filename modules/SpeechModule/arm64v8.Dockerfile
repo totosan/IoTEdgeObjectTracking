@@ -27,10 +27,9 @@ RUN pip3 install --upgrade pip && pip install --upgrade setuptools
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
-COPY /assets/* ./
+COPY /assets/*.mp3 ./
+COPY /assets/asound.conf /etc/
 COPY . .
 
-RUN useradd -ms /bin/bash moduleuser
-USER moduleuser
 
-ENTRYPOINT [ "python3", "-u", "./app.py" ]
+ENTRYPOINT [ "python3", "./app.py" ]
