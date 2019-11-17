@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.4.1",
+            "version": "1.4.9",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -140,7 +140,7 @@
             }
           },
           "postcarmodule": {
-            "version": "1.2",
+            "version": "1.2.3",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -214,7 +214,7 @@
             }
           },
           "SpeechModule": {
-            "version": "1.0",
+            "version": "1.1.11",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",

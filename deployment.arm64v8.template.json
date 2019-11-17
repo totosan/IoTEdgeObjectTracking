@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.4.7",
+            "version": "1.4.8",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -209,7 +209,7 @@
             }
           },
           "SpeechModule": {
-            "version": "1.1.8",
+            "version": "1.1.9",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
