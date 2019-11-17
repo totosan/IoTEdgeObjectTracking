@@ -140,7 +140,7 @@
             }
           },
           "postcarmodule": {
-            "version": "1.1",
+            "version": "1.2",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -212,6 +212,28 @@
                 }
               }
             }
+          },
+          "SpeechModule": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "${MODULES.SpeechModule.arm64v8}",
+              "createOptions": {
+                "HostConfig": {
+                  "Privileged": true,
+                  "Binds":["/dev/snd:/dev/snd"],
+                  "Devices": [
+                    {
+                      "PathOnHost": "/dev/snd",
+                      "PathInContainer": "/dev/snd",
+                      "CgroupPermissions": "mrw"
+                    }
+                  ]
+                }
+              }
+            }
           }
         }
       }
@@ -221,7 +243,7 @@
         "schemaVersion": "1.0",
         "routes": {
           "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/output1 INTO $upstream",
-          "YoloModuleToPostcarDetector": "FROM /messages/modules/YoloModule/outputs/output2 INTO BrokeredEndpoint(\"/modules/PostCarModule/inputs/input1\")"
+          "YoloModuleToSpeechModule": "FROM /messages/modules/YoloModule/outputs/output2 INTO BrokeredEndpoint(\"/modules/SpeechModule/inputs/input1\")"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

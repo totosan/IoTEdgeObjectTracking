@@ -26,7 +26,13 @@ def index():
 #     - octet-stream image file 
 #     - a multipart/form-data with files in the imageData parameter
 @app.route('/image', methods=['POST'])
-def predict_image_handler():
+@app.route('/<project>/image', methods=['POST'])
+@app.route('/<project>/image/nostore', methods=['POST'])
+@app.route('/<project>/classify/iterations/<publishedName>/image', methods=['POST'])
+@app.route('/<project>/classify/iterations/<publishedName>/image/nostore', methods=['POST'])
+@app.route('/<project>/detect/iterations/<publishedName>/image', methods=['POST'])
+@app.route('/<project>/detect/iterations/<publishedName>/image/nostore', methods=['POST'])
+def predict_image_handler(project=None, publishedName=None):
     try:
         imageData = None
         if ('imageData' in request.files):
@@ -38,9 +44,7 @@ def predict_image_handler():
 
         img = Image.open(imageData)
         results = predict_image(img)
-        js = jsonify(results)
-        print(f"Detected from PostCar Detector: {js}")
-        return js
+        return jsonify(results)
     except Exception as e:
         print('EXCEPTION:', str(e))
         return 'Error processing image', 500
@@ -50,7 +54,13 @@ def predict_image_handler():
 # in the body of hte request of the form:
 #     { 'Url': '<http url>'}  
 @app.route('/url', methods=['POST'])
-def predict_url_handler():
+@app.route('/<project>/url', methods=['POST'])
+@app.route('/<project>/url/nostore', methods=['POST'])
+@app.route('/<project>/classify/iterations/<publishedName>/url', methods=['POST'])
+@app.route('/<project>/classify/iterations/<publishedName>/url/nostore', methods=['POST'])
+@app.route('/<project>/detect/iterations/<publishedName>/url', methods=['POST'])
+@app.route('/<project>/detect/iterations/<publishedName>/url/nostore', methods=['POST'])
+def predict_url_handler(project=None, publishedName=None):
     try:
         image_url = json.loads(request.get_data().decode('utf-8'))['url']
         results = predict_url(image_url)
