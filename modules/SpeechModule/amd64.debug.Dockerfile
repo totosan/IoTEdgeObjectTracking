@@ -1,11 +1,11 @@
-FROM ubuntu:xenial
+FROM python:3.7-slim
 
 RUN echo "BUILD MODULE: SpeechModule for Linux/AMD64 (debug)"
 
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libcurl4-openssl-dev python3-pip libboost-python1.58-dev libpython3-dev alsa-utils && \
+    apt-get install -y --no-install-recommends libcurl4-openssl-dev python3-pip libpython3-dev alsa-utils && \
     rm -rf /var/lib/apt/lists/* 
 
 RUN pip3 install --upgrade pip
