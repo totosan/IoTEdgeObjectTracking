@@ -196,9 +196,10 @@ class DetectAndTrack():
                 details = self.__getObjectDetails__(frame,rect)
                 if details and len(details)>0:
                     predictions = details["predictions"]
-                    for item in predictions:
-                        print(f'{item["tagName"]} ({item["probability"]})')
-                    isPost = next((match for match in predictions if float(match["probability"])>0.8 and match["tagName"] == "Post"),None)
+                    try:
+                        isPost = next((match for match in predictions if float(match["probability"])>0.8 and match["tagName"] == "Post"),None)
+                    except GeneratorExit:
+                        pass
                     if isPost:
                         className = "post car"
                         messageIoTHub = IoTHubMessage("""{"Name":"Postauto"}""")

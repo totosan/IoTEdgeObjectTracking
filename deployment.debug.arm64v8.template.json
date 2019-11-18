@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.4.1",
+            "version": "1.4.10",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -140,12 +140,12 @@
             }
           },
           "postcarmodule": {
-            "version": "1.2",
+            "version": "1.2.2",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULES.PostcarDetector.arm64v8}",
+              "image": "${MODULES.PostcarDetector.debug-arm64v8}",
               "createOptions": {
                 "Env": [
                 ],
@@ -214,7 +214,7 @@
             }
           },
           "SpeechModule": {
-            "version": "1.0",
+            "version": "1.1.11",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",

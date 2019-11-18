@@ -2,7 +2,13 @@
 import json
 import os
 import io
-
+try:
+    import ptvsd
+    __myDebug__ = True 
+    ptvsd.enable_attach(('0.0.0.0',  5679))   
+except ImportError:
+    __myDebug__ = False
+    
 # Imports for the REST API
 from flask import Flask, request, jsonify
 
