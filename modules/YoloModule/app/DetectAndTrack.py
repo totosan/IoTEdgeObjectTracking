@@ -20,7 +20,7 @@ import cv2
 import base64
 import requests
 import json
-import asyncio
+
 
 try:
     import ptvsd
@@ -33,11 +33,13 @@ class DetectAndTrack():
     def __init__(self,
                  skipFrame=10,
                  confidence=0.4,
-                 imageProcessingEndpoint=""):
+                 imageProcessingEndpoint="",
+                 yoloInference=None):
         self.SKIP_FRAMES = skipFrame
         self.CONFIDENCE_LIMIT = confidence
         self.imageProcessingEndpoint = imageProcessingEndpoint
-
+        self.yoloInference = yoloInference
+        
         # initialize the frame dimensions (we'll set them as soon as we read
         # the first frame from the video)
         self.W = None
@@ -67,7 +69,7 @@ class DetectAndTrack():
 
         result = None        
         clippedImage = frame[y:y2, x:x2].copy()
-        if clippedImage.any():
+        if clippedImage.any():           
             cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
@@ -90,7 +92,7 @@ class DetectAndTrack():
             AppState.HubManager.send_event_to_output("output1", messageIoTHub, 0)
 
 
-    def doStuff(self, frame, W, H, yoloDetections):
+    def doStuff(self, frame, W, H):
 
         # the frame from BGR to RGB for dlib
         # frame = imutils.resize(frame, width=500)
@@ -112,7 +114,8 @@ class DetectAndTrack():
             # set the status and initialize our new set of object trackers
             status = "Detecting"
             self.trackers = []
-
+            
+            yoloDetections = self.yoloInference.runInference(frame, W, H, self.CONFIDENCE_LIMIT)   
             # loop over the detections
             for detection in yoloDetections:
                 class_type = detection.classType

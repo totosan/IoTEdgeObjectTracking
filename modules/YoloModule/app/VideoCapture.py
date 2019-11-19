@@ -32,9 +32,7 @@ import YoloInference
 from YoloInference import YoloInference
 
 # custom imports
-import DetectAndTrack
 from DetectAndTrack import DetectAndTrack
-
 
 class VideoCapture(object):
 
@@ -317,7 +315,7 @@ class VideoCapture(object):
 
         signal.signal(signal.SIGALRM, self.videoStreamReadTimeoutHandler)
 
-        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel, self.imageProcessingEndpoint)
+        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel, self.imageProcessingEndpoint, self.yoloInference)
         while True:
 
             # Get current time before we capture a frame
@@ -357,8 +355,8 @@ class VideoCapture(object):
 
             # Run Object Detection -- GUARD
             if self.inference:
-                yoloDetections = self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
-                detectionTracker.doStuff(frame, frameW, frameH, yoloDetections)
+                #yoloDetections = self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
+                detectionTracker.doStuff(frame, frameW, frameH)
 
             # Calculate FPS
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
