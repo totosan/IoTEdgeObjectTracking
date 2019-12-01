@@ -219,7 +219,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "${MODULES.SpeechModule.arm64v8}",
+              "image": "${MODULES.SpeechModule.arm64v8.debug}",
               "createOptions": {
                 "HostConfig": {
                   "Privileged": true,
