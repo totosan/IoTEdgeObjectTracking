@@ -36,16 +36,18 @@ async def main():
                 try:
                     prop = json.loads(input_message.data)
                     if prop["Name"]=="Postauto":
+                        os.system("aplay -Dplug:default samplePost.mp3")
                         print("Postauto")
-                        os.system("aplay samplePost.mp3")
                     if prop["Name"]=="Mensch":
-                        print("Mensch")
                         os.system("aplay sampleMensch.mp3")
+                        print("Mensch")
                     if prop["Name"]=="Auto":
-                        print("Auto")
                         os.system("aplay sampleAuto.mp3")
+                        print("Auto")
                 except NameError as err:
                     print(f"Audio could not be played/ Exception: {err}")
+                except :
+                    print(f"There is an exception: {sys.exc_info()[0]}")
                     
         # define behavior for halting the application
         def stdin_listener():

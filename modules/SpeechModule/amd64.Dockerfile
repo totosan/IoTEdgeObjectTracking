@@ -17,4 +17,4 @@ COPY . .
 RUN useradd -ms /bin/bash moduleuser
 USER moduleuser
 
-CMD [ "python3", "-u", "./main.py" ]
+CMD [ "python3", "-u", "./app.py" ]
