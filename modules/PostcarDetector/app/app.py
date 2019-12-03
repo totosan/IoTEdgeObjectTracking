@@ -39,6 +39,7 @@ def index():
 @app.route('/<project>/detect/iterations/<publishedName>/image', methods=['POST'])
 @app.route('/<project>/detect/iterations/<publishedName>/image/nostore', methods=['POST'])
 def predict_image_handler(project=None, publishedName=None):
+    print("Called image handler")
     try:
         imageData = None
         if ('imageData' in request.files):

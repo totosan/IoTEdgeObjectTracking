@@ -161,8 +161,7 @@ def update_orientation(image):
                 image = image.transpose(Image.FLIP_LEFT_RIGHT)
     return image
                 
-def predict_image(image):
-        
+def predict_image(image):        
     log_msg('Predicting image')
     try:
         if image.mode != "RGB":
@@ -173,24 +172,30 @@ def predict_image(image):
         log_msg("Image size: " + str(w) + "x" + str(h))
         
         # Update orientation based on EXIF tags
+        log_msg("Orientation")
         image = update_orientation(image)
 
         # If the image has either w or h greater than 1600 we resize it down respecting
         # aspect ratio such that the largest dimention is 1600
+        log_msg("resize to 1600")
         image = resize_down_to_1600_max_dim(image)
 
         # Convert image to numpy array
         image = convert_to_nparray(image)
         
         # Crop the center square and resize that square down to 256x256
+        log_msg("resize to 256 and extract bilinear")
         resized_image = extract_and_resize_to_256_square(image)
 
         # Crop the center for the specified network_input_Size
+        log_msg("crop to network size")
         cropped_image = crop_center(resized_image, network_input_size, network_input_size)
 
-        tf.compat.v1.reset_default_graph()
+        #tf.compat.v1.reset_default_graph()
+        log_msg("import graph definition")
         tf.import_graph_def(graph_def, name='')
 
+        log_msg("run tf session")
         with tf.compat.v1.Session() as sess:
             prob_tensor = sess.graph.get_tensor_by_name(output_layer)
             predictions, = sess.run(prob_tensor, {input_node: [cropped_image] })

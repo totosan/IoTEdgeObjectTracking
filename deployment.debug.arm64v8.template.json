@@ -140,7 +140,7 @@
             }
           },
           "postcarmodule": {
-            "version": "1.2.16",
+            "version": "1.2.19",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
