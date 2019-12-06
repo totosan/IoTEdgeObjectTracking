@@ -194,21 +194,21 @@ class DetectAndTrack():
 
             # if there is no existing trackable object, create one
             if to is None:
-                self.__sendToIoTHub__(to, rect, frame)
-                
-                details = self.__getObjectDetails__(frame,rect)
-                if details and len(details)>0:
-                    predictions = details["predictions"]
-                    try:
-                        isPost = next((match for match in predictions if float(match["probability"])>0.8 and match["tagName"] == "Post"),None)
-                    except GeneratorExit:
-                        pass
-                    if isPost:
-                        className = "post car"
-                        messageIoTHub = IoTHubMessage("""{"Name":"Postauto"}""")
-                        AppState.HubManager.send_event_to_output("output2", messageIoTHub, 0)
+                if className == 'car':
+                    details = self.__getObjectDetails__(frame,rect)
+                    if details and len(details)>0:
+                        predictions = details["predictions"]
+                        try:
+                            isPost = next((match for match in predictions if float(match["probability"])>0.8 and match["tagName"] == "Post"),None)
+                        except GeneratorExit:
+                            pass
+                        if isPost:
+                            className = "post car"
+                            messageIoTHub = IoTHubMessage("""{"Name":"Postauto"}""")
+                            AppState.HubManager.send_event_to_output("output2", messageIoTHub, 0)
                         
                 to = TrackableObject(objectID, className, centroid)
+                self.__sendToIoTHub__(to, rect, frame)
 
             # otherwise, there is a trackable object so we can utilize it
             # to determine direction
