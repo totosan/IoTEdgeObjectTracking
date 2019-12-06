@@ -67,6 +67,11 @@ class DetectAndTrack():
         x2 = clipregion[2]
         y2 = clipregion[3]
 
+        x = int(x - x*0.2)
+        y = int(y - y*0.2)
+        x2 = int(x2 + x2*0.2)
+        y2 = int(y2 + y2*0.2)
+
         result = None        
         clippedImage = frame[y:y2, x:x2].copy()
         if clippedImage.any():           
@@ -199,7 +204,7 @@ class DetectAndTrack():
                     if details and len(details)>0:
                         predictions = details["predictions"]
                         try:
-                            isPost = next((match for match in predictions if float(match["probability"])>0.8 and match["tagName"] == "Post"),None)
+                            isPost = next((match for match in predictions if float(match["probability"])>0.7 and match["tagName"] == "Postauto"),None)
                         except GeneratorExit:
                             pass
                         if isPost:

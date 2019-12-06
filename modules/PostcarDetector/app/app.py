@@ -8,7 +8,7 @@ try:
     ptvsd.enable_attach(('0.0.0.0',  5679))   
 except ImportError:
     __myDebug__ = False
-    
+
 # Imports for the REST API
 from flask import Flask, request, jsonify
 
