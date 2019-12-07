@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.4.13",
+            "version": "1.4.16",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -140,7 +140,7 @@
             }
           },
           "postcarmodule": {
-            "version": "1.2.16",
+            "version": "1.2.18",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
