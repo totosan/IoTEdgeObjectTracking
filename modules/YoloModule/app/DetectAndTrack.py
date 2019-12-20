@@ -23,6 +23,7 @@ import json
 import sys
 import os
 import uuid
+from datetime import datetime
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 from azure.storage.blob._shared.base_client import create_configuration
 
@@ -82,7 +83,7 @@ class DetectAndTrack():
                 print("Container already available")
            
             # Create a blob client using the local file name as the name for the blob
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob="car"+str(id)+".jpg")
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob="car_"+str(id)+".jpg")
             blob_client.upload_blob(image)
             #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
         except:
@@ -104,7 +105,9 @@ class DetectAndTrack():
         if clippedImage.any():
             cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
-                self.__saveToBloStorage(cropped, str(uuid.uuid4()))
+                now = datetime.now()
+                dt = now.strftime("%Y-%m-%d_%H-%M-%S")
+                self.__saveToBloStorage(cropped, dt)
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
                                     headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)

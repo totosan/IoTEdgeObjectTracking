@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.5.18",
+            "version": "1.5.19",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -79,48 +79,48 @@
                   "Devices": [
                     {
                       "PathOnHost": "/dev/nvhost-ctrl",
-                      "PathInContainer":"/dev/nvhost-ctrl",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvhost-ctrl",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-ctrl-gpu",
-                      "PathInContainer":"dev/nvhost-ctrl-gpu",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "dev/nvhost-ctrl-gpu",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-prof-gpu",
-                      "PathInContainer":"dev/nvhost-prof-gpu ",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "dev/nvhost-prof-gpu ",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvmap",
-                      "PathInContainer":"/dev/nvmap",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvmap",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "dev/nvhost-gpu",
-                      "PathInContainer":"dev/nvhost-gpu",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "dev/nvhost-gpu",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-as-gpu",
-                      "PathInContainer":"/dev/nvhost-as-gpu",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvhost-as-gpu",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-vic",
-                      "PathInContainer":"/dev/nvhost-vic",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvhost-vic",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/tegra_dc_ctrl",
-                      "PathInContainer":"/dev/tegra_dc_ctrl",
-                      "CgroupPermissions":"rwm"                      
+                      "PathInContainer": "/dev/tegra_dc_ctrl",
+                      "CgroupPermissions": "rwm"
                     },
                     {
-                       "PathOnHost": "/dev/video0",
-                       "PathInContainer":"/dev/video0",
-                       "CgroupPermissions":"rwm"                      
+                      "PathOnHost": "/dev/video0",
+                      "PathInContainer": "/dev/video0",
+                      "CgroupPermissions": "rwm"
                     }
                   ],
                   "PortBindings": {
@@ -147,54 +147,53 @@
             "settings": {
               "image": "${MODULES.PostcarDetector.debug-arm64v8}",
               "createOptions": {
-                "Env": [
-                ],
+                "Env": [],
                 "HostConfig": {
                   "Devices": [
                     {
                       "PathOnHost": "/dev/nvhost-ctrl",
-                      "PathInContainer":"/dev/nvhost-ctrl",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvhost-ctrl",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-ctrl-gpu",
-                      "PathInContainer":"dev/nvhost-ctrl-gpu",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "dev/nvhost-ctrl-gpu",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-prof-gpu",
-                      "PathInContainer":"dev/nvhost-prof-gpu ",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "dev/nvhost-prof-gpu ",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvmap",
-                      "PathInContainer":"/dev/nvmap",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvmap",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "dev/nvhost-gpu",
-                      "PathInContainer":"dev/nvhost-gpu",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "dev/nvhost-gpu",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-as-gpu",
-                      "PathInContainer":"/dev/nvhost-as-gpu",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvhost-as-gpu",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/nvhost-vic",
-                      "PathInContainer":"/dev/nvhost-vic",
-                      "CgroupPermissions":"rwm"
+                      "PathInContainer": "/dev/nvhost-vic",
+                      "CgroupPermissions": "rwm"
                     },
                     {
                       "PathOnHost": "/dev/tegra_dc_ctrl",
-                      "PathInContainer":"/dev/tegra_dc_ctrl",
-                      "CgroupPermissions":"rwm"                      
+                      "PathInContainer": "/dev/tegra_dc_ctrl",
+                      "CgroupPermissions": "rwm"
                     },
                     {
-                       "PathOnHost": "/dev/video0",
-                       "PathInContainer":"/dev/video0",
-                       "CgroupPermissions":"rwm"                      
+                      "PathOnHost": "/dev/video0",
+                      "PathInContainer": "/dev/video0",
+                      "CgroupPermissions": "rwm"
                     }
                   ],
                   "PortBindings": {
@@ -223,7 +222,9 @@
               "createOptions": {
                 "HostConfig": {
                   "Privileged": true,
-                  "Binds":["/dev/snd:/dev/snd"],
+                  "Binds": [
+                    "/dev/snd:/dev/snd"
+                  ],
                   "Devices": [
                     {
                       "PathOnHost": "/dev/snd",
@@ -244,7 +245,7 @@
               "image": "mcr.microsoft.com/azure-blob-storage:latest",
               "createOptions": {
                 "HostConfig": {
-                  "Binds":[
+                  "Binds": [
                     "/srv/containerdata:/blobroot"
                   ],
                   "PortBindings": {
@@ -287,7 +288,22 @@
         "VerboseMode": 0,
         "Inference": 1,
         "VideoSource": "",
-        "DetectionSampleRate":10
+        "DetectionSampleRate": 10
+      }
+    },
+    "azureblobstorageoniotedge": {
+      "properties.desired": {
+        "deviceToCloudUploadProperties": {
+          "uploadOrder": "OldestFirst",
+          "uploadOn": true,
+          "deleteAfterUpload": true,
+          "cloudStorageConnectionString": "$CloudStorageConnectionString",
+          "storageContainersForUpload": {
+            "cars": {
+              "target": "cars"
+            }
+          }
+        }
       }
     }
   }
