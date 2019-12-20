@@ -20,7 +20,11 @@ import cv2
 import base64
 import requests
 import json
-
+import sys
+import os
+import uuid
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from azure.storage.blob._shared.base_client import create_configuration
 
 try:
     import ptvsd
@@ -39,7 +43,7 @@ class DetectAndTrack():
         self.CONFIDENCE_LIMIT = confidence
         self.imageProcessingEndpoint = imageProcessingEndpoint
         self.yoloInference = yoloInference
-        
+
         # initialize the frame dimensions (we'll set them as soon as we read
         # the first frame from the video)
         self.W = None
@@ -61,6 +65,29 @@ class DetectAndTrack():
         # start the frames per second throughput estimator
         self.fps = FPS().start()
 
+    def __saveToBloStorage(self, image, id):
+        try:
+            conn_str = "DefaultEndpointsProtocol=https;BlobEndpoint=http://azureblobstorageoniotedge:11002/stoiotedge01;AccountName=stoiotedge01;AccountKey=iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
+            # Create the BlobServiceClient object which will be used to create a container client
+            blob_service_client = BlobServiceClient.from_connection_string(conn_str, headers = {"x-ms-version":"2017-04-17"})
+
+            # Create a unique name for the container
+            container_name = "cars"
+
+            # Create the container
+            try:
+                container_client = blob_service_client.create_container(
+                    container_name)
+            except:
+                print("Container already available")
+           
+            # Create a blob client using the local file name as the name for the blob
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob="car"+str(id)+".jpg")
+            blob_client.upload_blob(image)
+            #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
+        except:
+            print(f"Cannot save file {sys.exc_info()[0]}")
+
     def __getObjectDetails__(self, frame, clipregion):
         x = clipregion[0]
         y = clipregion[1]
@@ -72,17 +99,19 @@ class DetectAndTrack():
         x2 = int(x2 + x2*0.2)
         y2 = int(y2 + y2*0.2)
 
-        result = None        
+        result = None
         clippedImage = frame[y:y2, x:x2].copy()
-        if clippedImage.any():           
+        if clippedImage.any():
             cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
+                self.__saveToBloStorage(cropped, str(uuid.uuid4()))
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
                                     headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
-            except :
+            except:
                 result = ""
-                print(f"Exception occured on calling 2nd AI Module.")
+                print(
+                    f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
             print(f"got from 2nd AI {result}")
         return result
 
@@ -94,8 +123,8 @@ class DetectAndTrack():
                 trackingObject.objectID,
             )
             messageIoTHub = IoTHubMessage(strMessageIoTHub)
-            AppState.HubManager.send_event_to_output("output1", messageIoTHub, 0)
-
+            AppState.HubManager.send_event_to_output(
+                "output1", messageIoTHub, 0)
 
     def doStuff(self, frame, W, H):
 
@@ -119,8 +148,9 @@ class DetectAndTrack():
             # set the status and initialize our new set of object trackers
             status = "Detecting"
             self.trackers = []
-            
-            yoloDetections = self.yoloInference.runInference(frame, W, H, self.CONFIDENCE_LIMIT)   
+
+            yoloDetections = self.yoloInference.runInference(
+                frame, W, H, self.CONFIDENCE_LIMIT)
             # loop over the detections
             for detection in yoloDetections:
                 class_type = detection.classType
@@ -144,7 +174,8 @@ class DetectAndTrack():
 
                 tracker.start_track(rgb, rect)
 
-                container = TrackerExt(class_type, tracker, (startX, startY,endX,endY))
+                container = TrackerExt(
+                    class_type, tracker, (startX, startY, endX, endY))
 
                 # add the tracker to our list of trackers so we can
                 # utilize it during skip frames
@@ -200,18 +231,21 @@ class DetectAndTrack():
             # if there is no existing trackable object, create one
             if to is None:
                 if className == 'car':
-                    details = self.__getObjectDetails__(frame,rect)
-                    if details and len(details)>0:
+                    details = self.__getObjectDetails__(frame, rect)
+                    if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
-                            isPost = next((match for match in predictions if float(match["probability"])>0.7 and match["tagName"] == "Postauto"),None)
+                            isPost = next((match for match in predictions if float(
+                                match["probability"]) > 0.7 and match["tagName"] == "Postauto"), None)
                         except GeneratorExit:
                             pass
                         if isPost:
                             className = "post car"
-                            messageIoTHub = IoTHubMessage("""{"Name":"Postauto"}""")
-                            AppState.HubManager.send_event_to_output("output2", messageIoTHub, 0)
-                        
+                            messageIoTHub = IoTHubMessage(
+                                """{"Name":"Postauto"}""")
+                            AppState.HubManager.send_event_to_output(
+                                "output2", messageIoTHub, 0)
+
                 to = TrackableObject(objectID, className, centroid)
                 self.__sendToIoTHub__(to, rect, frame)
 

@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.4.16",
+            "version": "1.5.18",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -71,7 +71,7 @@
                   "VIDEO_HEIGHT=480",
                   "FONT_SCALE=0.8",
                   "NOIOTHUB=False",
-                  "DETECTION_SAMPLE_RATE=5",
+                  "DETECTION_SAMPLE_RATE=10",
                   "CONFIDENCE_LEVEL=0.3",
                   "IMAGE_PROCESSING_ENDPOINT=http://postcarmodule/image"
                 ],
@@ -234,6 +234,37 @@
                 }
               }
             }
+          },
+          "azureblobstorageoniotedge": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azure-blob-storage:latest",
+              "createOptions": {
+                "HostConfig": {
+                  "Binds":[
+                    "/srv/containerdata:/blobroot"
+                  ],
+                  "PortBindings": {
+                    "11002/tcp": [
+                      {
+                        "HostPort": "11002"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "env": {
+              "LOCAL_STORAGE_ACCOUNT_KEY": {
+                "value": "iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
+              },
+              "LOCAL_STORAGE_ACCOUNT_NAME": {
+                "value": "stoiotedge01"
+              }
+            }
           }
         }
       }
@@ -255,7 +286,8 @@
         "ConfidenceLevel": "0.3",
         "VerboseMode": 0,
         "Inference": 1,
-        "VideoSource": ""
+        "VideoSource": "",
+        "DetectionSampleRate":10
       }
     }
   }
