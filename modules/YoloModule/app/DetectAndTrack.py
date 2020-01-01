@@ -81,14 +81,11 @@ class DetectAndTrack():
         # start the frames per second throughput estimator
         self.fps = FPS().start()
 
-    def __saveToBlobStorage(self, image, typeName = "car"):
+    def __saveToBlobStorage(self, image, id="", typeName = "car"):
         try:
             conn_str = "DefaultEndpointsProtocol=https;BlobEndpoint=http://azureblobstorageoniotedge:11002/stoiotedge01;AccountName=stoiotedge01;AccountKey=iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
             # Create the BlobServiceClient object which will be used to create a container client
             blob_service_client = BlobServiceClient.from_connection_string(conn_str, headers = {"x-ms-version":"2017-04-17"})
-
-            now = datetime.now()
-            dateTime = now.strftime("%Y-%m-%d_%H-%M-%S")
 
             # Create a unique name for the container
             container_name = "clipped"
@@ -100,12 +97,24 @@ class DetectAndTrack():
                 print("Container already available")
            
             # Create a blob client using the local file name as the name for the blob
-            blobName = "{}_{}.{}".format(str(dateTime),typeName,"jpg")
+            blobName = self.__createBlobName(id, typeName)
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=blobName)
             blob_client.upload_blob(image)
             #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
         except:
             print(f"Cannot save file {sys.exc_info()[0]}")
+
+    def __createBlobName(self, id, typeName):
+        extension = "jpg"
+        idStrForName = id
+        if id:
+            idStrForName = "("+ idStrForName +")"
+            
+        now = datetime.now()
+        dateTime = now.strftime("%Y-%m-%d-%H-%M-%S")
+            
+        blobName = "{}{}_{}.{}".format(idStrForName, dateTime, typeName, extension)
+        return blobName
 
     def __getObjectDetails__(self, frame, clipregion):
         x = clipregion[0]
