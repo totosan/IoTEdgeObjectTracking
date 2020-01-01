@@ -81,7 +81,7 @@ class DetectAndTrack():
         # start the frames per second throughput estimator
         self.fps = FPS().start()
 
-    def __saveToBlobStorage(self, image, id="", typeName = "car"):
+    def __saveToBlobStorage(self, image, id="", typeName = "nothing"):
         try:
             conn_str = "DefaultEndpointsProtocol=https;BlobEndpoint=http://azureblobstorageoniotedge:11002/stoiotedge01;AccountName=stoiotedge01;AccountKey=iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
             # Create the BlobServiceClient object which will be used to create a container client
@@ -97,17 +97,17 @@ class DetectAndTrack():
                 print("Container already available")
            
             # Create a blob client using the local file name as the name for the blob
-            blobName = self.__createBlobName(id, typeName)
+            blobName = self.__createBlobName(id, typeName=typeName)
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=blobName)
             blob_client.upload_blob(image)
-            #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
+            
         except:
             print(f"Cannot save file {sys.exc_info()[0]}")
 
     def __createBlobName(self, id, typeName):
         extension = "jpg"
         idStrForName = id
-        if id:
+        if not id == "":
             idStrForName = "("+ idStrForName +")"
             
         now = datetime.now()
@@ -116,24 +116,11 @@ class DetectAndTrack():
         blobName = "{}{}_{}.{}".format(idStrForName, dateTime, typeName, extension)
         return blobName
 
-    def __getObjectDetails__(self, frame, clipregion):
-        x = clipregion[0]
-        y = clipregion[1]
-        x2 = clipregion[2]
-        y2 = clipregion[3]
-
-        x = int(x - x*0.2)
-        y = int(y - y*0.2)
-        x2 = int(x2 + x2*0.2)
-        y2 = int(y2 + y2*0.2)
-
+    def __getCarDetails__(self, image):
         result = None
-        clippedImage = frame[y:y2, x:x2].copy()
-        if clippedImage.any():
-            cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
+        if image:
             try:
-                self.__saveToBlobStorage(cropped)
-                res = requests.post(url=self.imageProcessingEndpoint, data=cropped, headers={'Content-Type': 'application/octet-stream'})
+                res = requests.post(url=self.imageProcessingEndpoint, data=image, headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
             except:
                 result = ""
@@ -258,8 +245,10 @@ class DetectAndTrack():
             
             # if there is no existing trackable object, create one
             if to is None:
+                clipped = clipImage(frame, rect)
+                
                 if className == 'car':
-                    details = self.__getObjectDetails__(frame, rect)
+                    details = self.__getCarDetails__(clipped)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
@@ -268,14 +257,14 @@ class DetectAndTrack():
                         except GeneratorExit:
                             pass
                         if isPost:
-                            className = "post car"
+                            className = "postcar"
                             messageIoTHub = IoTHubMessage(
                                 """{"Name":"Postauto"}""")
                             AppState.HubManager.send_event_to_output(
                                 "output2", messageIoTHub, 0)
-                else:
-                    clipped = clipImage(frame, rect)
-                    self.__saveToBlobStorage(clipped, className)
+                
+                self.__saveToBlobStorage(clipped, id=objectID, typeName=className)
+                self.__saveToBlobStorage(frame, id=objectID, typeName="{}-full".format(className))
                     
                 to = TrackableObject(objectID, className, centroid)
                 self.__sendToIoTHub__(to, rect, frame)
