@@ -89,17 +89,16 @@
               }
             }
           },
-          "PostCarModule": {
-            "version": "1.0",
+          "postcarmodule": {
+            "version": "1.2.18",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
             "settings": {
               "image": "${MODULES.PostcarDetector.debug-amd64}",
               "createOptions": {
+                "Env": [],
                 "HostConfig": {
-                  "Devices": [
-                  ],
                   "PortBindings": {
                     "5679/tcp": [
                       {
@@ -126,6 +125,9 @@
               "createOptions": {
                 "HostConfig": {
                   "Privileged": true,
+                  "Binds": [
+                    "/dev/snd:/dev/snd"
+                  ],
                   "Devices": [
                     {
                       "PathOnHost": "/dev/snd",
@@ -134,6 +136,37 @@
                     }
                   ]
                 }
+              }
+            }
+          },
+          "azureblobstorageoniotedge": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azure-blob-storage:latest",
+              "createOptions": {
+                "HostConfig": {
+                  "Binds": [
+                    "/srv/containerdata:/blobroot"
+                  ],
+                  "PortBindings": {
+                    "11002/tcp": [
+                      {
+                        "HostPort": "11002"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "env": {
+              "LOCAL_STORAGE_ACCOUNT_KEY": {
+                "value": "iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
+              },
+              "LOCAL_STORAGE_ACCOUNT_NAME": {
+                "value": "stoiotedge01"
               }
             }
           }
@@ -145,11 +178,34 @@
         "schemaVersion": "1.0",
         "routes": {
           "YoloModuleToIoTHub": "FROM /messages/modules/YoloModule/outputs/output1 INTO $upstream",
-          "YoloModuleToSpeechModule": "FROM /messages/modules/YoloModule/outputs/output2 INTO BrokeredEndpoint(\"/modules/SpeechModule/inputs/input1\")",
-          "AzureBlobStorageonIoTEdgeToIoTHub": "FROM /messages/modules/AzureBlobStorageonIoTEdge/outputs/* INTO $upstream"
+          "YoloModuleToSpeechModule": "FROM /messages/modules/YoloModule/outputs/output2 INTO BrokeredEndpoint(\"/modules/SpeechModule/inputs/input1\")"        
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200
+        }
+      }
+    },
+    "YoloModule": {
+      "properties.desired": {
+        "ConfidenceLevel": "0.3",
+        "VerboseMode": 0,
+        "Inference": 1,
+        "VideoSource": "",
+        "DetectionSampleRate": 10
+      }
+    },
+    "azureblobstorageoniotedge": {
+      "properties.desired": {
+        "deviceToCloudUploadProperties": {
+          "uploadOrder": "OldestFirst",
+          "uploadOn": true,
+          "deleteAfterUpload": true,
+          "cloudStorageConnectionString": "$CloudStorageConnectionString",
+          "storageContainersForUpload": {
+            "cars": {
+              "target": "cars-CamAlert"
+            }
+          }
         }
       }
     }

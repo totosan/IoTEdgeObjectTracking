@@ -33,6 +33,21 @@ try:
 except ImportError:
     __myDebug__ = False
 
+def clipImage(image, clipregion):
+    x = clipregion[0]
+    y = clipregion[1]
+    x2 = clipregion[2]
+    y2 = clipregion[3]
+
+    x = int(x - x*0.2)
+    y = int(y - y*0.2)
+    x2 = int(x2 + x2*0.2)
+    y2 = int(y2 + y2*0.2)
+    clippedImage = image[y:y2, x:x2].copy()
+    if clippedImage.any():
+        cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
+        return cropped
+    return None
 
 class DetectAndTrack():
     def __init__(self,
@@ -66,24 +81,27 @@ class DetectAndTrack():
         # start the frames per second throughput estimator
         self.fps = FPS().start()
 
-    def __saveToBloStorage(self, image, id):
+    def __saveToBlobStorage(self, image, typeName = "car"):
         try:
             conn_str = "DefaultEndpointsProtocol=https;BlobEndpoint=http://azureblobstorageoniotedge:11002/stoiotedge01;AccountName=stoiotedge01;AccountKey=iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
             # Create the BlobServiceClient object which will be used to create a container client
             blob_service_client = BlobServiceClient.from_connection_string(conn_str, headers = {"x-ms-version":"2017-04-17"})
 
+            now = datetime.now()
+            dateTime = now.strftime("%Y-%m-%d_%H-%M-%S")
+
             # Create a unique name for the container
-            container_name = "cars"
+            container_name = "clipped"
 
             # Create the container
             try:
-                container_client = blob_service_client.create_container(
-                    container_name)
+                container_client = blob_service_client.create_container(container_name)
             except:
                 print("Container already available")
            
             # Create a blob client using the local file name as the name for the blob
-            blob_client = blob_service_client.get_blob_client(container=container_name, blob="car_"+str(id)+".jpg")
+            blobName = "{}_{}.{}".format(str(dateTime),typeName,"jpg")
+            blob_client = blob_service_client.get_blob_client(container=container_name, blob=blobName)
             blob_client.upload_blob(image)
             #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
         except:
@@ -105,16 +123,12 @@ class DetectAndTrack():
         if clippedImage.any():
             cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
-                now = datetime.now()
-                dt = now.strftime("%Y-%m-%d_%H-%M-%S")
-                self.__saveToBloStorage(cropped, dt)
-                res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
-                                    headers={'Content-Type': 'application/octet-stream'})
+                self.__saveToBlobStorage(cropped)
+                res = requests.post(url=self.imageProcessingEndpoint, data=cropped, headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
             except:
                 result = ""
-                print(
-                    f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
+                print(f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
             print(f"got from 2nd AI {result}")
         return result
 
@@ -230,7 +244,10 @@ class DetectAndTrack():
             centroid = centroidTrackerData[0]
             className = centroidTrackerData[1]
             rect = centroidTrackerData[2]
-
+            
+            directionX = 0
+            directionY = 0
+            
             # if there is no existing trackable object, create one
             if to is None:
                 if className == 'car':
@@ -248,7 +265,10 @@ class DetectAndTrack():
                                 """{"Name":"Postauto"}""")
                             AppState.HubManager.send_event_to_output(
                                 "output2", messageIoTHub, 0)
-
+                else:
+                    clipped = clipImage(frame, rect)
+                    self.__saveToBlobStorage(clipped, className)
+                    
                 to = TrackableObject(objectID, className, centroid)
                 self.__sendToIoTHub__(to, rect, frame)
 
@@ -260,8 +280,14 @@ class DetectAndTrack():
                 # us in which direction the object is moving (negative for
                 # 'up' and positive for 'down')
                 y = [c[1] for c in to.centroids]
-
-                direction = centroid[1] - np.mean(y)
+                x = [c[0] for c in to.centroids]
+                
+                directionY = centroid[1] - np.mean(y)
+                directionX = centroid[0] - np.mean(x)
+                
+                if len(to.centroids)>=200:
+                    temp = to.centroids[:len(to.centroids)-2]
+                    to.centroids = temp
                 to.centroids.append(centroid)
 
                 # check to see if the object has been counted or not
@@ -269,14 +295,14 @@ class DetectAndTrack():
                     # if the direction is negative (indicating the object
                     # is moving up) AND the centroid is above the center
                     # line, count the object
-                    if direction < 0 and centroid[1] < H // 2:
+                    if directionY < 0 and centroid[1] < H // 2:
                         self.totalUp += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
                     # is moving down) AND the centroid is below the
                     # center line, count the object
-                    elif direction > 0 and centroid[1] > H // 2:
+                    elif directionY > 0 and centroid[1] > H // 2:
                         self.totalDown += 1
                         to.counted = True
 
@@ -285,11 +311,9 @@ class DetectAndTrack():
 
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "ID {}, {}".format(objectID, to.type)
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(
-                frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
+            text = "{}: {} ({}, {})".format(objectID, to.type, round(directionX,1),round(directionY,1))
+            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.circle(frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
 
         # increment the total number of frames processed thus far and
         # then update the FPS counter
