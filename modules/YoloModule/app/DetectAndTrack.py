@@ -68,7 +68,7 @@ class DetectAndTrack():
         # instantiate our centroid tracker, then initialize a list to store
         # each of our dlib correlation trackers, followed by a dictionary to
         # map each unique object ID to a TrackableObject
-        self.ct = CentroidTracker(maxDisappeared=20, maxDistance=50)
+        self.ct = CentroidTracker(maxDisappeared=50, maxDistance=50)
         self.trackers = []
         self.trackableObjects = {}
 
@@ -191,8 +191,7 @@ class DetectAndTrack():
 
                 tracker.start_track(rgb, rect)
 
-                container = TrackerExt(
-                    class_type, tracker, (startX, startY, endX, endY))
+                container = TrackerExt(class_type, tracker, (startX, startY, endX, endY))
 
                 # add the tracker to our list of trackers so we can
                 # utilize it during skip frames
