@@ -108,12 +108,12 @@ class DetectAndTrack():
         extension = "jpg"
         idStrForName = id
         if not id == "":
-            idStrForName = "("+ idStrForName +")"
+            idStrForName = "("+ str(idStrForName) +")"
             
         now = datetime.now()
         dateTime = now.strftime("%Y-%m-%d-%H-%M-%S")
             
-        blobName = "{}{}_{}.{}".format(idStrForName, dateTime, typeName, extension)
+        blobName = "{}{}_{}.{}".format(dateTime, idStrForName, typeName, extension)
         return blobName
 
     def __getCarDetails__(self, image):
@@ -140,7 +140,8 @@ class DetectAndTrack():
                 "output1", messageIoTHub, 0)
 
     def doStuff(self, frame, W, H):
-
+        origFrame = frame[:]
+        
         # the frame from BGR to RGB for dlib
         # frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -245,7 +246,7 @@ class DetectAndTrack():
             
             # if there is no existing trackable object, create one
             if to is None:
-                clipped = clipImage(frame, rect)
+                clipped = clipImage(origFrame, rect)
                 
                 if className == 'car':
                     details = self.__getCarDetails__(clipped)
@@ -258,13 +259,13 @@ class DetectAndTrack():
                             pass
                         if isPost:
                             className = "postcar"
-                            messageIoTHub = IoTHubMessage(
-                                """{"Name":"Postauto"}""")
-                            AppState.HubManager.send_event_to_output(
-                                "output2", messageIoTHub, 0)
+                            messageIoTHub = IoTHubMessage("""{"Name":"Postauto"}""")
+                            AppState.HubManager.send_event_to_output("output2", messageIoTHub, 0)
                 
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=className)
-                self.__saveToBlobStorage(frame, id=objectID, typeName="{}-full".format(className))
+                fullName =  className +"-full"
+                clipped = clipImage(origFrame, [0,0,W,H])
+                self.__saveToBlobStorage(clipped, id=objectID, typeName=fullName)
                     
                 to = TrackableObject(objectID, className, centroid)
                 self.__sendToIoTHub__(to, rect, frame)
