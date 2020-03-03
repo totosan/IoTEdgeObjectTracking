@@ -46,6 +46,8 @@ RUN git clone --depth=1 https://github.com/ytdl-org/youtube-dl.git && \
     make install
 
 RUN pip3 install -v -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends libffi-dev libssl-dev python-openssl
+RUN pip3 install azure-storage-blob
 
 ADD /app/ .
 

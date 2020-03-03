@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.4.8",
+            "version": "1.5.$BUILD_VERSION_YOLO",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -71,7 +71,7 @@
                   "VIDEO_HEIGHT=480",
                   "FONT_SCALE=0.8",
                   "NOIOTHUB=False",
-                  "DETECTION_SAMPLE_RATE=5",
+                  "DETECTION_SAMPLE_RATE=10",
                   "CONFIDENCE_LEVEL=0.3",
                   "IMAGE_PROCESSING_ENDPOINT=http://postcarmodule/image"
                 ],
@@ -135,15 +135,14 @@
             }
           },
           "postcarmodule": {
-            "version": "1.2.19",
+            "version": "1.2.$BUILD_VERSION_POSTCAR",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
             "settings": {
               "image": "${MODULES.PostcarDetector.arm64v8}",
               "createOptions": {
-                "Env": [
-                ],
+                "Env": [],
                 "HostConfig": {
                   "Devices": [
                     {
@@ -209,7 +208,7 @@
             }
           },
           "SpeechModule": {
-            "version": "1.1.19",
+            "version": "1.1.$BUILD_VERSION_SPEECH",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -218,7 +217,9 @@
               "createOptions": {
                 "HostConfig": {
                   "Privileged": true,
-                  "Binds":["/dev/snd:/dev/snd"],
+                  "Binds": [
+                    "/dev/snd:/dev/snd"
+                  ],
                   "Devices": [
                     {
                       "PathOnHost": "/dev/snd",
@@ -227,6 +228,37 @@
                     }
                   ]
                 }
+              }
+            }
+          },
+          "azureblobstorageoniotedge": {
+            "version": "1.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azure-blob-storage:latest",
+              "createOptions": {
+                "HostConfig": {
+                  "Binds": [
+                    "/srv/containerdata:/blobroot"
+                  ],
+                  "PortBindings": {
+                    "11002/tcp": [
+                      {
+                        "HostPort": "11002"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "env": {
+              "LOCAL_STORAGE_ACCOUNT_KEY": {
+                "value": "iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
+              },
+              "LOCAL_STORAGE_ACCOUNT_NAME": {
+                "value": "stoiotedge01"
               }
             }
           }
@@ -250,7 +282,23 @@
         "ConfidenceLevel": "0.3",
         "VerboseMode": 0,
         "Inference": 1,
-        "VideoSource": ""
+        "VideoSource": "",
+        "DetectionSampleRate": 10
+      }
+    },
+    "azureblobstorageoniotedge": {
+      "properties.desired": {
+        "deviceToCloudUploadProperties": {
+          "uploadOrder": "OldestFirst",
+          "uploadOn": true,
+          "deleteAfterUpload": true,
+          "cloudStorageConnectionString": "$CLOUDSTORAGE_CONNECTIONSTRING",
+          "storageContainersForUpload": {
+            "clipped": {
+              "target": "clipped"
+            }
+          }
+        }
       }
     }
   }
