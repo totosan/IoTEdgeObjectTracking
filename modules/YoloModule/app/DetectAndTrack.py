@@ -107,7 +107,7 @@ class DetectAndTrack():
             try:
                 now = datetime.now()
                 dt = now.strftime("%Y-%m-%d_%H-%M-%S")
-                self.__saveToBloStorage(cropped, dt)
+                #self.__saveToBloStorage(cropped, dt)
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
                                     headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
@@ -239,7 +239,7 @@ class DetectAndTrack():
                         predictions = details["predictions"]
                         try:
                             isPost = next((match for match in predictions if float(
-                                match["probability"]) > 0.7 and match["tagName"] == "Postauto"), None)
+                                match["probability"]) > 0.7 and match["tagName"] == "Post"), None)
                         except GeneratorExit:
                             pass
                         if isPost:

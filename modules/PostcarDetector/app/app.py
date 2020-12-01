@@ -2,10 +2,12 @@
 import json
 import os
 import io
+from datetime import datetime
+
 try:
     import ptvsd
-    __myDebug__ = True 
-    ptvsd.enable_attach(('0.0.0.0',  5679))   
+    __myDebug__ = True
+    ptvsd.enable_attach(('0.0.0.0',  5679))
 except ImportError:
     __myDebug__ = False
 
@@ -14,30 +16,30 @@ from flask import Flask, request, jsonify
 
 # Imports for image procesing
 from PIL import Image
-
-# Imports for prediction
-from predict import initialize, predict_image, predict_url
+from predict2 import predict, initialize
 
 app = Flask(__name__)
 
+MODEL_FILENAME = 'model.onnx'
+LABELS_FILENAME = 'labels.txt'
+
 # 4MB Max image size limit
-app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024 
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
 # Default route just shows simple text
+
+
 @app.route('/')
 def index():
     return 'CustomVision.ai model host harness'
 
 # Like the CustomVision.ai Prediction service /image route handles either
-#     - octet-stream image file 
+#     - octet-stream image file
 #     - a multipart/form-data with files in the imageData parameter
+
+initialize(MODEL_FILENAME)
+
 @app.route('/image', methods=['POST'])
-@app.route('/<project>/image', methods=['POST'])
-@app.route('/<project>/image/nostore', methods=['POST'])
-@app.route('/<project>/classify/iterations/<publishedName>/image', methods=['POST'])
-@app.route('/<project>/classify/iterations/<publishedName>/image/nostore', methods=['POST'])
-@app.route('/<project>/detect/iterations/<publishedName>/image', methods=['POST'])
-@app.route('/<project>/detect/iterations/<publishedName>/image/nostore', methods=['POST'])
 def predict_image_handler(project=None, publishedName=None):
     try:
         imageData = None
@@ -49,36 +51,33 @@ def predict_image_handler(project=None, publishedName=None):
             imageData = io.BytesIO(request.get_data())
 
         img = Image.open(imageData)
-        results = predict_image(img)
-        return jsonify(results)
+        results = predict(img)
+        with open(LABELS_FILENAME) as f:
+            labels = [l.strip() for l in f.readlines()]
+
+        predictions = [{'probability': round(float(pred[1]), 8),
+                  'tagId': 0,
+                  'tagName': labels[pred[2]],
+                  'boundingBox': {
+                    'left': round(float(pred[0][0]), 8),
+                    'top': round(float(pred[0][1]), 8),
+                    'width': round(float(pred[0][2]), 8),
+                    'height': round(float(pred[0][3]), 8)
+                    }
+                } for pred in zip(*results)]
+        response = {
+                'id': '',
+                'project': '',
+                'iteration': '',
+                'created': datetime.utcnow().isoformat(),
+                'predictions': predictions }
+        return jsonify(response)
     except Exception as e:
         print('EXCEPTION:', str(e))
         return 'Error processing image', 500
 
 
-# Like the CustomVision.ai Prediction service /url route handles url's
-# in the body of hte request of the form:
-#     { 'Url': '<http url>'}  
-@app.route('/url', methods=['POST'])
-@app.route('/<project>/url', methods=['POST'])
-@app.route('/<project>/url/nostore', methods=['POST'])
-@app.route('/<project>/classify/iterations/<publishedName>/url', methods=['POST'])
-@app.route('/<project>/classify/iterations/<publishedName>/url/nostore', methods=['POST'])
-@app.route('/<project>/detect/iterations/<publishedName>/url', methods=['POST'])
-@app.route('/<project>/detect/iterations/<publishedName>/url/nostore', methods=['POST'])
-def predict_url_handler(project=None, publishedName=None):
-    try:
-        image_url = json.loads(request.get_data().decode('utf-8'))['url']
-        results = predict_url(image_url)
-        return jsonify(results)
-    except Exception as e:
-        print('EXCEPTION:', str(e))
-        return 'Error processing image'
-
 if __name__ == '__main__':
-    # Load and intialize the model
-    initialize()
 
     # Run the server
     app.run(host='0.0.0.0', port=80)
-

@@ -1,5 +1,12 @@
-Auto
-Fahrradfahrer
-Mensch
-Postauto
-Volvo V40
+auto
+Fahrrad
+Hund
+Kinderwagen
+LKW
+Person
+Post
+Rita
+Roller
+Tonne
+V50
+Van
