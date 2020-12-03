@@ -55,16 +55,17 @@ def predict_image_handler(project=None, publishedName=None):
         with open(LABELS_FILENAME) as f:
             labels = [l.strip() for l in f.readlines()]
 
-        predictions = [{'probability': round(float(pred[1]), 8),
+        label = results[0][0][0]
+        predictions = [{'probability': results[1][0][label],
                   'tagId': 0,
-                  'tagName': labels[pred[2]],
+                  'tagName':label,
                   'boundingBox': {
-                    'left': round(float(pred[0][0]), 8),
-                    'top': round(float(pred[0][1]), 8),
-                    'width': round(float(pred[0][2]), 8),
-                    'height': round(float(pred[0][3]), 8)
+                    'left': 0,
+                    'top': 0,
+                    'width': 0,
+                    'height': 0
                     }
-                } for pred in zip(*results)]
+                }]
         response = {
                 'id': '',
                 'project': '',

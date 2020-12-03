@@ -1,12 +1,7 @@
-auto
-Fahrrad
-Hund
-Kinderwagen
+Auto
 LKW
-Person
 Post
+RAPP
 Rita
-Roller
-Tonne
+Rot
 V50
-Van

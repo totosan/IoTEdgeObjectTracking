@@ -90,15 +90,15 @@ class DetectAndTrack():
             print(f"Cannot save file {sys.exc_info()[0]}")
 
     def __getObjectDetails__(self, frame, clipregion):
-        x = clipregion[0]
-        y = clipregion[1]
-        x2 = clipregion[2]
-        y2 = clipregion[3]
+        x = int(clipregion[0]-15.0)
+        y = int(clipregion[1]-15.0)
+        x2 = int(clipregion[2]+15.0)
+        y2 = int(clipregion[3]+15.0)
 
-        x = int(x - x*0.2)
-        y = int(y - y*0.2)
-        x2 = int(x2 + x2*0.2)
-        y2 = int(y2 + y2*0.2)
+        #x = int(x - x*0.2)
+        #y = int(y - y*0.2)
+        #x2 = int(x2 + x2*0.2)
+        #y2 = int(y2 + y2*0.2)
 
         result = None
         clippedImage = frame[y:y2, x:x2].copy()
@@ -107,7 +107,7 @@ class DetectAndTrack():
             try:
                 now = datetime.now()
                 dt = now.strftime("%Y-%m-%d_%H-%M-%S")
-                #self.__saveToBloStorage(cropped, dt)
+                self.__saveToBloStorage(cropped, dt)
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
                                     headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)

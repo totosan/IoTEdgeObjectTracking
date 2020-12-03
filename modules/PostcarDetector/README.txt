@@ -19,6 +19,10 @@ docker buildx build --platform linux/arm/v7 -t <your image name> --load .
 docker run -p 127.0.0.1:80:80 -d <your image name>
 ```
 
+## Image resizing
+By default, we run manual image resizing to maintain parity with CVS webservice prediction results.
+If parity is not required, you can enable faster image resizing by uncommenting the lines installing OpenCV in the Dockerfile.
+
 Then use your favorite tool to connect to the end points.
 
 POST http://127.0.0.1/image with multipart/form-data using the imageData key

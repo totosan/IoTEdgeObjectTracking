@@ -22,7 +22,7 @@
           "edgeAgent": {
             "type": "docker",
             "settings": {
-              "image": "mcr.microsoft.com/azureiotedge-agent:1.0.8",
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.0",
               "createOptions": {}
             }
           },
@@ -31,7 +31,7 @@
             "status": "running",
             "restartPolicy": "always",
             "settings": {
-              "image": "mcr.microsoft.com/azureiotedge-hub:1.0.8",
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.0",
               "createOptions": {
                 "HostConfig": {
                   "PortBindings": {
@@ -58,7 +58,7 @@
         },
         "modules": {
           "YoloModule": {
-            "version": "1.5.23",
+            "version": "1.5.25",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
@@ -140,7 +140,7 @@
             }
           },
           "postcarmodule": {
-            "version": "1.3.16",
+            "version": "1.3.32",
             "type": "docker",
             "status": "running",
             "restartPolicy": "always",
