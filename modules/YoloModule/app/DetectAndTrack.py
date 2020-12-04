@@ -33,7 +33,6 @@ try:
 except ImportError:
     __myDebug__ = False
 
-
 class DetectAndTrack():
     def __init__(self,
                  skipFrame=10,
@@ -139,6 +138,8 @@ class DetectAndTrack():
         if W is None or H is None:
             (H, W) = frame.shape[:2]
 
+        backUpFrame = frame.copy()
+        
         # initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
         # (2) the correlation trackers
@@ -234,7 +235,7 @@ class DetectAndTrack():
             # if there is no existing trackable object, create one
             if to is None:
                 if className == 'car':
-                    details = self.__getObjectDetails__(frame, rect)
+                    details = self.__getObjectDetails__(backUpFrame, rect)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
