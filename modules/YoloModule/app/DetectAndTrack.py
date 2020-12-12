@@ -33,6 +33,8 @@ try:
 except ImportError:
     __myDebug__ = False
 
+<<<<<<< HEAD
+=======
 def clipImage(image, clipregion):
     x = clipregion[0]
     y = clipregion[1]
@@ -49,6 +51,7 @@ def clipImage(image, clipregion):
         return cropped
     return None
 
+>>>>>>> master
 class DetectAndTrack():
     def __init__(self,
                  skipFrame=10,
@@ -100,29 +103,22 @@ class DetectAndTrack():
             blobName = self.__createBlobName(id, typeName=typeName)
             blob_client = blob_service_client.get_blob_client(container=container_name, blob=blobName)
             blob_client.upload_blob(image)
-            
-        except:
+            #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
+        except Exception as e:
             print(f"Cannot save file {sys.exc_info()[0]}")
 
-    def __createBlobName(self, id, typeName):
-        extension = "jpg"
-        idStrForName = id
-        if not id == "":
-            idStrForName = "("+ str(idStrForName) +")"
-            
-        now = datetime.now()
-        dateTime = now.strftime("%Y-%m-%d-%H-%M-%S")
-            
-        blobName = "{}{}_{}.{}".format(dateTime, idStrForName, typeName, extension)
-        return blobName
+    def __getObjectDetails__(self, frame, clipregion):
+        x = int(clipregion[0]-15.0)
+        y = int(clipregion[1]-15.0)
+        x2 = int(clipregion[2]+15.0)
+        y2 = int(clipregion[3]+15.0)
 
-    def __getCarDetails__(self, image):
         result = None
         if image:
             try:
                 res = requests.post(url=self.imageProcessingEndpoint, data=image, headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
-            except:
+            except Exception as e:
                 result = ""
                 print(f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
             print(f"got from 2nd AI {result}")
@@ -150,6 +146,8 @@ class DetectAndTrack():
         if W is None or H is None:
             (H, W) = frame.shape[:2]
 
+        backUpFrame = frame.copy()
+        
         # initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
         # (2) the correlation trackers
@@ -248,13 +246,13 @@ class DetectAndTrack():
             if to is None:
                 clipped = clipImage(origFrame, rect)
                 
-                if className == 'car':
-                    details = self.__getCarDetails__(clipped)
+                if className == 'car' or className == 'truck':
+                    details = self.__getObjectDetails__(backUpFrame, rect)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
                             isPost = next((match for match in predictions if float(
-                                match["probability"]) > 0.7 and match["tagName"] == "Postauto"), None)
+                                match["probability"]) > 0.7 and match["tagName"] == "Post"), None)
                         except GeneratorExit:
                             pass
                         if isPost:

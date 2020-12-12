@@ -1,12 +1,13 @@
 {
-  "DomainType": "ObjectDetection",
-  "Platform": "DockerFile",
-  "Flavor": "ARM",
-  "ExporterVersion": "2.1",
-  "ExportedDate": "2019-12-01T21:21:37.9935837Z",
-  "IterationId": "8151ecce-2924-48ce-9791-960ce8cf49f6",
-  "ModelFileName": "model.pb",
+  "DomainType": "Classification",
+  "Platform": "ONNX",
+  "Flavor": null,
+  "ExporterVersion": "2.0",
+  "ExportedDate": "2020-12-02T22:31:59.8536509Z",
+  "IterationId": "db60c4e5-609a-49e3-a0b9-1a55f9bbf2dc",
+  "ModelFileName": "model.onnx",
   "LabelFileName": "labels.txt",
-  "ModelFileSHA1": "09dc8cc911e914fa4c000ae0069a108639db83cc",
+  "MetadataPropsFileName": "metadata_properties.json",
+  "ModelFileSHA1": "512bac484f226fcb48e065d7f42c25f4c876978e",
   "SchemaVersion": "1.0"
 }

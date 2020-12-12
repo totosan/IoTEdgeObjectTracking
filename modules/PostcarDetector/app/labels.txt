@@ -1,5 +1,7 @@
 Auto
-Fahrradfahrer
-Mensch
-Postauto
-Volvo V40
+LKW
+Post
+RAPP
+Rita
+Rot
+V50

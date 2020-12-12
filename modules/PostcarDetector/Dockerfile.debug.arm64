@@ -1,19 +1,8 @@
-﻿FROM iotcontainertt.azurecr.io/jetson-tensorflow:0.1.0 as compile-image
+﻿FROM arm64v8/python:3.6-slim
 
 SHELL ["/bin/bash", "-c"]
 
-RUN apt -y update && DEBIAN_FRONTEND=noninteractive apt install -y cmake build-essential curl libcurl4-openssl-dev \
-    libssl-dev uuid-dev apt-utils python python-pip python-virtualenv python3 python3-pip python3-virtualenv \
-    libboost-python-dev pkg-config valgrind sudo git software-properties-common \
-    libjpeg62-dev libopenjp2-7 libtiff5 libatlas-base-dev && \
-    rm -rf /var/lib/apt/lists/* 
-
-RUN pip3 install absl-py six protobuf wrapt gast astor termcolor keras_applications keras_preprocessing --no-deps
-RUN pip3 install numpy --no-deps
-RUN pip3 install flask pillow
-
-COPY requirements.txt ./
-RUN pip3 install -r requirements.txt
+RUN pip3 install flask pillow onnxruntime
 RUN pip3 install ptvsd
 
 COPY app /app
@@ -25,3 +14,6 @@ EXPOSE 80 5679
 
 # Run the flask server for the endpoints
 CMD python3 app.py
+
+
+#docker build  --rm -f "c:\Temp\IoTEdgeObjectTracking\modules\YoloModule\Dockerfile.debug.arm64v8" -t iotcontainertt.azurecr.io/yolomodule:latest-debug-arm64v8 "c:\Temp\IoTEdgeObjectTracking\modules\YoloModule" ; if ($?) { docker push iotcontainertt.azurecr.io/yolomodule:latest-debug-arm64v8 } if ($?) { docker buildx build --platform=linux/arm64/v8 --rm -f "c:\Temp\IoTEdgeObjectTracking\modules\PostcarDetector\Dockerfile.debug.arm64" -t iotcontainertt.azurecr.io/postcardetector:latest-debug-arm64v8 --load "c:\Temp\IoTEdgeObjectTracking\modules\PostcarDetector" } if ($?) { docker push iotcontainertt.azurecr.io/postcardetector:latest-debug-arm64v8 } if ($?) { docker build  --rm -f "c:\Temp\IoTEdgeObjectTracking\modules\SpeechModule\arm64v8.debug.Dockerfile" -t iotcontainertt.azurecr.io/speechmodule:latest-arm64v8.debug "c:\Temp\IoTEdgeObjectTracking\modules\SpeechModule" } if ($?) { docker push iotcontainertt.azurecr.io/speechmodule:latest-arm64v8.debug }
