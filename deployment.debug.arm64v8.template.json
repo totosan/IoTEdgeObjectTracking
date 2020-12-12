@@ -300,7 +300,7 @@
           "cloudStorageConnectionString": "$CloudStorageConnectionString",
           "storageContainersForUpload": {
             "clipped": {
-              "target": "clipped"
+              "target": "cars"
             }
           }
         }

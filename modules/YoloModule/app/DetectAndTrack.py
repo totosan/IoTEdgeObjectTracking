@@ -80,7 +80,19 @@ class DetectAndTrack():
 
         # start the frames per second throughput estimator
         self.fps = FPS().start()
-
+    
+    def __createBlobName(self, id, typeName):
+        extension = "jpg"
+        idStrForName = id
+        if not id == "":
+            idStrForName = "("+ str(idStrForName) +")"
+            
+        now = datetime.now()
+        dateTime = now.strftime("%Y-%m-%d-%H-%M-%S")
+            
+        blobName = "{}{}_{}.{}".format(dateTime, idStrForName, typeName, extension)
+        return blobName
+    
     def __saveToBlobStorage(self, image, id="", typeName = "nothing"):
         try:
             conn_str = "DefaultEndpointsProtocol=https;BlobEndpoint=http://azureblobstorageoniotedge:11002/stoiotedge01;AccountName=stoiotedge01;AccountKey=iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
@@ -104,7 +116,7 @@ class DetectAndTrack():
         except Exception as e:
             print(f"Cannot save file {sys.exc_info()[0]}")
 
-    def __getObjectDetails__(self, frame, clipregion):
+    def __getObjectDetails__(self, frame, clipregion, typeName=""):
         x = int(clipregion[0]-15.0)
         y = int(clipregion[1]-15.0)
         x2 = int(clipregion[2]+15.0)
@@ -115,7 +127,7 @@ class DetectAndTrack():
         if clippedImage.any():
             cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
-                self.__saveToBlobStorage(cropped)
+                #self.__saveToBlobStorage(cropped, typeName=typeName)
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped, headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
             except:
@@ -136,8 +148,6 @@ class DetectAndTrack():
                 "output1", messageIoTHub, 0)
 
     def doStuff(self, frame, W, H):
-        origFrame = frame[:]
-        
         # the frame from BGR to RGB for dlib
         # frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -244,10 +254,10 @@ class DetectAndTrack():
             
             # if there is no existing trackable object, create one
             if to is None:
-                clipped = clipImage(origFrame, rect)
+                clipped = clipImage(backUpFrame, rect)
                 
                 if className == 'car' or className == 'truck':
-                    details = self.__getObjectDetails__(backUpFrame, rect)
+                    details = self.__getObjectDetails__(backUpFrame, rect, typeName=className)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
@@ -262,7 +272,7 @@ class DetectAndTrack():
                 
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=className)
                 fullName =  className +"-full"
-                clipped = clipImage(origFrame, [0,0,W,H])
+                clipped = clipImage(backUpFrame, [0,0,W,H])
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=fullName)
                     
                 to = TrackableObject(objectID, className, centroid)
@@ -307,9 +317,14 @@ class DetectAndTrack():
 
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "{}: {} ({}, {})".format(objectID, to.type, round(directionX,1),round(directionY,1))
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
-            cv2.circle(frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
+            directX = int(round(directionX,1))
+            directY = int(round(directionY,1))
+            colorCircle = (20, 250, 130)
+            colorText = (0, 255, 0)
+            text = "{}: {} ({}, {})".format(objectID, to.type, directX,directY)
+            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, colorText, 1)
+            cv2.circle(frame, (centroid[0], centroid[1]), 4, colorCircle , -1)
+            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorCircle, 2)
 
         # increment the total number of frames processed thus far and
         # then update the FPS counter
