@@ -78,14 +78,14 @@ class DetectAndTrack():
             try:
                 container_client = blob_service_client.create_container(
                     container_name)
-            except:
+            except ResourceExistsError:
                 print("Container already available")
            
             # Create a blob client using the local file name as the name for the blob
             blob_client = blob_service_client.get_blob_client(container=container_name, blob="car_"+str(id)+".jpg")
             blob_client.upload_blob(image)
             #blob_client.upload_blob(image, headers = {"x-ms-version":"2017-04-17"})
-        except:
+        except Exception as e:
             print(f"Cannot save file {sys.exc_info()[0]}")
 
     def __getObjectDetails__(self, frame, clipregion):
@@ -110,7 +110,7 @@ class DetectAndTrack():
                 res = requests.post(url=self.imageProcessingEndpoint, data=cropped,
                                     headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
-            except:
+            except Exception as e:
                 result = ""
                 print(
                     f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
