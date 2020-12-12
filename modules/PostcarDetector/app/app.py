@@ -19,6 +19,8 @@ from PIL import Image
 from predict2 import predict, initialize
 
 app = Flask(__name__)
+csrf = CSRFProtect()
+csrf.init_app(app)
 
 MODEL_FILENAME = 'model.onnx'
 LABELS_FILENAME = 'labels.txt'
@@ -30,6 +32,7 @@ app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024
 
 
 @app.route('/')
+@csrf.exempt # Sensitive
 def index():
     return 'CustomVision.ai model host harness'
 
@@ -40,6 +43,7 @@ def index():
 initialize(MODEL_FILENAME)
 
 @app.route('/image', methods=['POST'])
+@csrf.exempt # Sensitive
 def predict_image_handler(project=None, publishedName=None):
     try:
         imageData = None
