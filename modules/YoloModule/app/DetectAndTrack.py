@@ -310,7 +310,7 @@ class DetectAndTrack():
             # draw both the ID of the object and the centroid of the
             # object on the output frame
             text = "{}: {} ({}, {})".format(objectID, to.type, round(directionX,1),round(directionY,1))
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
 
         # increment the total number of frames processed thus far and
