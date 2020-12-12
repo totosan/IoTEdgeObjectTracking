@@ -246,7 +246,7 @@ class DetectAndTrack():
             if to is None:
                 clipped = clipImage(origFrame, rect)
                 
-                if className == 'car':
+                if className == 'car' or className == 'truck':
                     details = self.__getObjectDetails__(backUpFrame, rect)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
