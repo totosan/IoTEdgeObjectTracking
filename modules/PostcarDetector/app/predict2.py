@@ -15,7 +15,6 @@ class ObjectDetection:
     def __init__(self, model_filename):
         self.session = onnxruntime.InferenceSession(model_filename)
         self.input_shape = self.session.get_inputs()[0].shape[2:]
-        #self.label_name = [output_tensor.name for output_tensor in self.session.get_outputs()]
         self.is_fp16 = self.session.get_inputs()[0].type == 'tensor(float16)'
 
     def crop_center(self, pil_img, crop_width, crop_height):

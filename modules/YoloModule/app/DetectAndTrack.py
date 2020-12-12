@@ -94,11 +94,6 @@ class DetectAndTrack():
         x2 = int(clipregion[2]+15.0)
         y2 = int(clipregion[3]+15.0)
 
-        #x = int(x - x*0.2)
-        #y = int(y - y*0.2)
-        #x2 = int(x2 + x2*0.2)
-        #y2 = int(y2 + y2*0.2)
-
         result = None
         clippedImage = frame[y:y2, x:x2].copy()
         if clippedImage.any():
