@@ -33,8 +33,6 @@ try:
 except ImportError:
     __myDebug__ = False
 
-<<<<<<< HEAD
-=======
 def clipImage(image, clipregion):
     x = clipregion[0]
     y = clipregion[1]
@@ -51,7 +49,6 @@ def clipImage(image, clipregion):
         return cropped
     return None
 
->>>>>>> master
 class DetectAndTrack():
     def __init__(self,
                  skipFrame=10,
@@ -114,11 +111,14 @@ class DetectAndTrack():
         y2 = int(clipregion[3]+15.0)
 
         result = None
-        if image:
+        clippedImage = frame[y:y2, x:x2].copy()
+        if clippedImage.any():
+            cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
-                res = requests.post(url=self.imageProcessingEndpoint, data=image, headers={'Content-Type': 'application/octet-stream'})
+                self.__saveToBlobStorage(cropped)
+                res = requests.post(url=self.imageProcessingEndpoint, data=cropped, headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
-            except Exception as e:
+            except:
                 result = ""
                 print(f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
             print(f"got from 2nd AI {result}")
