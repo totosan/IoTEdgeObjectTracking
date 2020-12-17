@@ -299,7 +299,7 @@
           "deleteAfterUpload": true,
           "cloudStorageConnectionString": "$CloudStorageConnectionString",
           "storageContainersForUpload": {
-            "clipped": {
+            "cars": {
               "target": "cars"
             }
           }

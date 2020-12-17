@@ -100,7 +100,7 @@ class DetectAndTrack():
             blob_service_client = BlobServiceClient.from_connection_string(conn_str, headers = {"x-ms-version":"2017-04-17"})
 
             # Create a unique name for the container
-            container_name = "clipped"
+            container_name = "cars"
 
             # Create the container
             try:
@@ -192,7 +192,7 @@ class DetectAndTrack():
                     cv2.rectangle(frame, (startX, startY),
                                   (endX, endY), (0, 0, 0), 1)
                     cv2.putText(frame, class_type, (startX, startY),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
                 tracker.start_track(rgb, rect)
 
@@ -234,8 +234,7 @@ class DetectAndTrack():
 
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        extractedRects = [
-            trackerContainer for trackerContainer in self.trackers]
+        extractedRects = [trackerContainer for trackerContainer in self.trackers]
 
         objects = self.ct.update(extractedRects)
 
@@ -283,11 +282,10 @@ class DetectAndTrack():
             else:
                 # the difference between the y-coordinate of the *current*
                 # centroid and the mean of *previous* centroids will tell
-                # us in which direction the object is moving (negative for
-                # 'up' and positive for 'down')
+                # us in which direction the object is moving 
                 y = [c[1] for c in to.centroids]
                 x = [c[0] for c in to.centroids]
-                
+  
                 directionY = centroid[1] - np.mean(y)
                 directionX = centroid[0] - np.mean(x)
                 
@@ -298,11 +296,8 @@ class DetectAndTrack():
 
                 # check to see if the object has been counted or not
                 if not to.counted:
-                    # if the direction is negative (indicating the object
-                    # is moving up) AND the centroid is above the center
-                    # line, count the object
-                    if directionY < 0 and centroid[1] < H // 2:
-                        self.totalUp += 1
+                    if int(directionY) == 0 and int(directionX) == 0:
+                        #self.totalUp += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
@@ -320,12 +315,14 @@ class DetectAndTrack():
             directX = int(round(directionX,1))
             directY = int(round(directionY,1))
             colorCircle = (20, 250, 130)
+            colorArrow = (100,240,130)
             colorText = (0, 255, 0)
-            text = "{}: {} ({}, {})".format(objectID, to.type, directX,directY)
+            text = "{}: {}".format(objectID, to.type)
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, colorText, 1)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, colorCircle , -1)
-            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorCircle, 2)
-
+            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 1)
+            #if len(to.centroids)>1 :
+            #    cv2.polylines(frame, np.int32(to.centroids), True, colorCircle, 1)
         # increment the total number of frames processed thus far and
         # then update the FPS counter
         self.totalFrames += 1
