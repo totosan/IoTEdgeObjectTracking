@@ -54,16 +54,16 @@ class DetectAndTrack():
                  skipFrame=10,
                  confidence=0.4,
                  imageProcessingEndpoint="",
-                 yoloInference=None):
+                 yoloInference=None,
+                 cameraW=None, cameraH=None):
         self.SKIP_FRAMES = skipFrame
         self.CONFIDENCE_LIMIT = confidence
         self.imageProcessingEndpoint = imageProcessingEndpoint
         self.yoloInference = yoloInference
 
-        # initialize the frame dimensions (we'll set them as soon as we read
-        # the first frame from the video)
-        self.W = None
-        self.H = None
+       
+        self.origH = cameraH
+        self.origW = cameraW
 
         # instantiate our centroid tracker, then initialize a list to store
         # each of our dlib correlation trackers, followed by a dictionary to
@@ -147,7 +147,7 @@ class DetectAndTrack():
             AppState.HubManager.send_event_to_output(
                 "output1", messageIoTHub, 0)
 
-    def doStuff(self, frame, W, H):
+    def doStuff(self, frame, origFrame, W, H):
         # the frame from BGR to RGB for dlib
         # frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -155,8 +155,8 @@ class DetectAndTrack():
         # if the frame dimensions are empty, set them
         if W is None or H is None:
             (H, W) = frame.shape[:2]
-
-        backUpFrame = frame.copy()
+        if self.origW is None or self.origH is None:
+            (self.origW, self.origH) = origFrame.shape[:2]
         
         # initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
@@ -251,12 +251,17 @@ class DetectAndTrack():
             directionX = 0
             directionY = 0
             
+            ratioH = self.origH/H
+            ratioW = self.origW/W
+            
             # if there is no existing trackable object, create one
             if to is None:
-                clipped = clipImage(backUpFrame, rect)
+                
+                rect2 = (rect[0]*ratioW, rect[1]*ratioH,rect[2]*ratioW,rect[3]*ratioH)
+                clipped = clipImage(origFrame, rect2)
                 
                 if className == 'car' or className == 'truck':
-                    details = self.__getObjectDetails__(backUpFrame, rect, typeName=className)
+                    details = self.__getObjectDetails__(origFrame, rect, typeName=className)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
@@ -271,7 +276,7 @@ class DetectAndTrack():
                 
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=className)
                 fullName =  className +"-full"
-                clipped = clipImage(backUpFrame, [0,0,W,H])
+                clipped = clipImage(origFrame, [0,0,self.origW, self.origH])
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=fullName)
                     
                 to = TrackableObject(objectID, className, centroid)
@@ -289,8 +294,8 @@ class DetectAndTrack():
                 directionY = centroid[1] - np.mean(y)
                 directionX = centroid[0] - np.mean(x)
                 
-                if len(to.centroids)>=200:
-                    temp = to.centroids[:len(to.centroids)-2]
+                if len(to.centroids)>=300:
+                    temp = to.centroids[2:]
                     to.centroids = temp
                 to.centroids.append(centroid)
 
@@ -315,12 +320,12 @@ class DetectAndTrack():
             directX = int(round(directionX,1))
             directY = int(round(directionY,1))
             colorCircle = (20, 250, 130)
-            colorArrow = (100,240,130)
+            colorArrow = (0,0,250)
             colorText = (0, 255, 0)
             text = "{}: {}".format(objectID, to.type)
             cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, colorText, 1)
             cv2.circle(frame, (centroid[0], centroid[1]), 4, colorCircle , -1)
-            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 1)
+            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 2)
             #if len(to.centroids)>1 :
             #    cv2.polylines(frame, np.int32(to.centroids), True, colorCircle, 1)
         # increment the total number of frames processed thus far and
