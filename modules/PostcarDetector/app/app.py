@@ -19,8 +19,7 @@ from PIL import Image
 from predict2 import predict, initialize
 
 app = Flask(__name__)
-csrf = CSRFProtect()
-csrf.init_app(app) # Compliant
+
 
 MODEL_FILENAME = 'model.onnx'
 LABELS_FILENAME = 'labels.txt'

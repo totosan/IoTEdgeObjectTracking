@@ -1,0 +1,5 @@
+docker build  --rm -f "c:\Temp\IoTEdgeObjectTracking\modules\YoloModule\Dockerfile.debug.arm64v8" -t iotcontainertt.azurecr.io/yolomodule:latest-debug-arm64v8 "c:\Temp\IoTEdgeObjectTracking\modules\YoloModule" ;
+if ($?) {docker push iotcontainertt.azurecr.io/yolomodule:latest-debug-arm64v8 } 
+if ($?) { docker build  --rm -f "c:\Temp\IoTEdgeObjectTracking\modules\PostcarDetector\Dockerfile.debug.arm64" -t iotcontainertt.azurecr.io/postcardetector:latest-debug-arm64v8 "c:\Temp\IoTEdgeObjectTracking\modules\PostcarDetector" } if ($?) { docker push iotcontainertt.azurecr.io/postcardetector:latest-debug-arm64v8 }
+if ($?) { docker build  --rm -f "c:\Temp\IoTEdgeObjectTracking\modules\SpeechModule\arm64v8.debug.Dockerfile" -t iotcontainertt.azurecr.io/speechmodule:latest-arm64v8.debug "c:\Temp\IoTEdgeObjectTracking\modules\SpeechModule" }
+if ($?) { docker push iotcontainertt.azurecr.io/speechmodule:latest-arm64v8.debug }

@@ -33,8 +33,6 @@ try:
 except ImportError:
     __myDebug__ = False
 
-<<<<<<< HEAD
-=======
 def clipImage(image, clipregion):
     x = clipregion[0]
     y = clipregion[1]
@@ -51,22 +49,21 @@ def clipImage(image, clipregion):
         return cropped
     return None
 
->>>>>>> master
 class DetectAndTrack():
     def __init__(self,
                  skipFrame=10,
                  confidence=0.4,
                  imageProcessingEndpoint="",
-                 yoloInference=None):
+                 yoloInference=None,
+                 cameraW=None, cameraH=None):
         self.SKIP_FRAMES = skipFrame
         self.CONFIDENCE_LIMIT = confidence
         self.imageProcessingEndpoint = imageProcessingEndpoint
         self.yoloInference = yoloInference
 
-        # initialize the frame dimensions (we'll set them as soon as we read
-        # the first frame from the video)
-        self.W = None
-        self.H = None
+       
+        self.origH = cameraH
+        self.origW = cameraW
 
         # instantiate our centroid tracker, then initialize a list to store
         # each of our dlib correlation trackers, followed by a dictionary to
@@ -83,7 +80,19 @@ class DetectAndTrack():
 
         # start the frames per second throughput estimator
         self.fps = FPS().start()
-
+    
+    def __createBlobName(self, id, typeName):
+        extension = "jpg"
+        idStrForName = id
+        if not id == "":
+            idStrForName = "("+ str(idStrForName) +")"
+            
+        now = datetime.now()
+        dateTime = now.strftime("%Y-%m-%d-%H-%M-%S")
+            
+        blobName = "{}{}_{}.{}".format(dateTime, idStrForName, typeName, extension)
+        return blobName
+    
     def __saveToBlobStorage(self, image, id="", typeName = "nothing"):
         try:
             conn_str = "DefaultEndpointsProtocol=https;BlobEndpoint=http://azureblobstorageoniotedge:11002/stoiotedge01;AccountName=stoiotedge01;AccountKey=iU6uTvlF1ysppmft+NO5lAD0E3hwrAORr5Rb5xcBWUgEz/OicrSkFxwZYMNK5XL29/wXZKGOoOVSW040nAOfPg=="
@@ -91,7 +100,7 @@ class DetectAndTrack():
             blob_service_client = BlobServiceClient.from_connection_string(conn_str, headers = {"x-ms-version":"2017-04-17"})
 
             # Create a unique name for the container
-            container_name = "clipped"
+            container_name = "cars"
 
             # Create the container
             try:
@@ -107,18 +116,21 @@ class DetectAndTrack():
         except Exception as e:
             print(f"Cannot save file {sys.exc_info()[0]}")
 
-    def __getObjectDetails__(self, frame, clipregion):
+    def __getObjectDetails__(self, frame, clipregion, typeName=""):
         x = int(clipregion[0]-15.0)
         y = int(clipregion[1]-15.0)
         x2 = int(clipregion[2]+15.0)
         y2 = int(clipregion[3]+15.0)
 
         result = None
-        if image:
+        clippedImage = frame[y:y2, x:x2].copy()
+        if clippedImage.any():
+            cropped = cv2.imencode('.jpg', clippedImage)[1].tobytes()
             try:
-                res = requests.post(url=self.imageProcessingEndpoint, data=image, headers={'Content-Type': 'application/octet-stream'})
+                #self.__saveToBlobStorage(cropped, typeName=typeName)
+                res = requests.post(url=self.imageProcessingEndpoint, data=cropped, headers={'Content-Type': 'application/octet-stream'})
                 result = json.loads(res.content)
-            except Exception as e:
+            except:
                 result = ""
                 print(f"Exception occured on calling 2nd AI Module. {sys.exc_info()[0]}")
             print(f"got from 2nd AI {result}")
@@ -135,9 +147,7 @@ class DetectAndTrack():
             AppState.HubManager.send_event_to_output(
                 "output1", messageIoTHub, 0)
 
-    def doStuff(self, frame, W, H):
-        origFrame = frame[:]
-        
+    def doStuff(self, frame, origFrame, W, H):
         # the frame from BGR to RGB for dlib
         # frame = imutils.resize(frame, width=500)
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -145,8 +155,8 @@ class DetectAndTrack():
         # if the frame dimensions are empty, set them
         if W is None or H is None:
             (H, W) = frame.shape[:2]
-
-        backUpFrame = frame.copy()
+        if self.origW is None or self.origH is None:
+            (self.origW, self.origH) = origFrame.shape[:2]
         
         # initialize the current status along with our list of bounding
         # box rectangles returned by either (1) our object detector or
@@ -182,7 +192,7 @@ class DetectAndTrack():
                     cv2.rectangle(frame, (startX, startY),
                                   (endX, endY), (0, 0, 0), 1)
                     cv2.putText(frame, class_type, (startX, startY),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
                 tracker.start_track(rgb, rect)
 
@@ -224,8 +234,7 @@ class DetectAndTrack():
 
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
-        extractedRects = [
-            trackerContainer for trackerContainer in self.trackers]
+        extractedRects = [trackerContainer for trackerContainer in self.trackers]
 
         objects = self.ct.update(extractedRects)
 
@@ -242,12 +251,17 @@ class DetectAndTrack():
             directionX = 0
             directionY = 0
             
+            ratioH = self.origH/H
+            ratioW = self.origW/W
+            
             # if there is no existing trackable object, create one
             if to is None:
-                clipped = clipImage(origFrame, rect)
+                
+                rect2 = (rect[0]*ratioW, rect[1]*ratioH,rect[2]*ratioW,rect[3]*ratioH)
+                clipped = clipImage(origFrame, rect2)
                 
                 if className == 'car' or className == 'truck':
-                    details = self.__getObjectDetails__(backUpFrame, rect)
+                    details = self.__getObjectDetails__(origFrame, rect, typeName=className)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
                         try:
@@ -262,7 +276,7 @@ class DetectAndTrack():
                 
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=className)
                 fullName =  className +"-full"
-                clipped = clipImage(origFrame, [0,0,W,H])
+                clipped = clipImage(origFrame, [0,0,self.origW, self.origH])
                 self.__saveToBlobStorage(clipped, id=objectID, typeName=fullName)
                     
                 to = TrackableObject(objectID, className, centroid)
@@ -273,26 +287,22 @@ class DetectAndTrack():
             else:
                 # the difference between the y-coordinate of the *current*
                 # centroid and the mean of *previous* centroids will tell
-                # us in which direction the object is moving (negative for
-                # 'up' and positive for 'down')
+                # us in which direction the object is moving 
                 y = [c[1] for c in to.centroids]
                 x = [c[0] for c in to.centroids]
-                
+  
                 directionY = centroid[1] - np.mean(y)
                 directionX = centroid[0] - np.mean(x)
                 
-                if len(to.centroids)>=200:
-                    temp = to.centroids[:len(to.centroids)-2]
+                if len(to.centroids)>=300:
+                    temp = to.centroids[2:]
                     to.centroids = temp
                 to.centroids.append(centroid)
 
                 # check to see if the object has been counted or not
                 if not to.counted:
-                    # if the direction is negative (indicating the object
-                    # is moving up) AND the centroid is above the center
-                    # line, count the object
-                    if directionY < 0 and centroid[1] < H // 2:
-                        self.totalUp += 1
+                    if int(directionY) == 0 and int(directionX) == 0:
+                        #self.totalUp += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
@@ -307,10 +317,17 @@ class DetectAndTrack():
 
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "{}: {} ({}, {})".format(objectID, to.type, round(directionX,1),round(directionY,1))
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-            cv2.circle(frame, (centroid[0], centroid[1]), 4, (20, 250, 130), -1)
-
+            directX = int(round(directionX,1))
+            directY = int(round(directionY,1))
+            colorCircle = (20, 250, 130)
+            colorArrow = (0,0,250)
+            colorText = (0, 255, 0)
+            text = "{}: {}".format(objectID, to.type)
+            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, colorText, 1)
+            cv2.circle(frame, (centroid[0], centroid[1]), 4, colorCircle , -1)
+            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 2)
+            #if len(to.centroids)>1 :
+            #    cv2.polylines(frame, np.int32(to.centroids), True, colorCircle, 1)
         # increment the total number of frames processed thus far and
         # then update the FPS counter
         self.totalFrames += 1
