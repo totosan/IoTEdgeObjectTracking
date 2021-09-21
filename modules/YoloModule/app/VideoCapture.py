@@ -251,6 +251,16 @@ class VideoCapture(object):
 
             if not self.captureInProgress:
                 time.sleep(1.0)
+                
+    def crop_center(self, pil_img, crop_width, crop_height):
+        img_width, img_height = pil_img.size
+        return pil_img.crop(((img_width - crop_width) // 2,
+                            (img_height - crop_height) // 2,
+                            (img_width + crop_width) // 2,
+                            (img_height + crop_height) // 2))
+    def crop_max_square(self,pil_img):
+        return self.crop_center(pil_img, min(pil_img.size), min(pil_img.size))
+
 
     def __Run__(self):
 
@@ -315,7 +325,7 @@ class VideoCapture(object):
 
         signal.signal(signal.SIGALRM, self.videoStreamReadTimeoutHandler)
 
-        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel, self.imageProcessingEndpoint, self.yoloInference)
+        detectionTracker = DetectAndTrack(self.detectionSampleRate, self.confidenceLevel, self.imageProcessingEndpoint, self.yoloInference, cameraW, cameraH)
         while True:
 
             # Get current time before we capture a frame
@@ -350,13 +360,14 @@ class VideoCapture(object):
                 raise(e)
 
             # Resize frame if flagged
+            origFrame = frame.copy()
             if needResizeFrame:
                 frame = cv2.resize(frame, (self.videoW, self.videoH))
 
             # Run Object Detection -- GUARD
             if self.inference:
                 #yoloDetections = self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
-                detectionTracker.doStuff(frame, frameW, frameH)
+                detectionTracker.doStuff(frame, origFrame, frameW, frameH)
 
             # Calculate FPS
             timeElapsedInMs = (time.time() - tFrameStart) * 1000
