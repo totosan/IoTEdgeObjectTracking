@@ -88,7 +88,7 @@ window.onload = function () {
 
   const repaintLines = () => {
     lineCollection.lines.forEach((line, i) => {
-      if (lineCollection.activeLine == i) context.lineWidth = 6;
+      if (lineCollection.activeLine === i) context.lineWidth = 6;
       else context.lineWidth = 1;
 
       drawLineL(line.start, line.end);
@@ -136,7 +136,17 @@ window.onload = function () {
     var point = findNearestPointOnLine(coord, line.start, line.end);
     var dist = calculateLineLength({ start: coord, end: point });
     return dist;
-  };
+    };
+    
+    const keyUpListener = (event) => {
+        event = event || window.event;
+        if (event.key == 'Delete') {
+            lineCollection.lines.splice(lineCollection.activeLine, 1);
+            lineCollection.activeLine = null;
+            clearCanvas();
+            repaintLines();
+        }
+    }
 
   can.addEventListener("mousedown", mouseDownListener);
   can.addEventListener("mousemove", mouseMoveListener);
@@ -145,4 +155,6 @@ window.onload = function () {
   can.addEventListener("touchstart", mouseDownListener);
   can.addEventListener("touchmove", mouseMoveListener);
   can.addEventListener("touchend", mouseUpListener);
+
+    document.addEventListener("keyup", keyUpListener);
 };
