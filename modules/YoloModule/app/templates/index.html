@@ -1,27 +1,38 @@
 <html>
   <head>
     <title>Video Stream</title>
-    <meta http-equiv="content-type" charset="utf-8">
+    <meta http-equiv="content-type" charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="drawApp.js"></script>
   </head>
-  
+
   <body>
-    <img id="currentImage" style="border:2px solid teal">
+    <img
+      id="currentImage"
+      src="../test_images/frame001.jpg"
+      style="border: 2px solid teal; width: 100%"
+    />
+    <canvas id="canvas" > </canvas>
     <script>
       var img = document.getElementById("currentImage");
-      url = document.URL.replace('http','ws')
-      var ws = new WebSocket(url + "stream");
+      url = document.URL.replace("http", "ws");
+      try {
+        var ws = new WebSocket(url + "stream");
 
-      ws.onopen = function() {
+        ws.onopen = function () {
           console.log("connection was established");
           ws.send("next");
-      };
+        };
 
-      ws.onmessage = function(msg) {
-          img.src = 'data:image/png;base64, ' + msg.data;
-      };
+        ws.onmessage = function (msg) {
+          img.src = "data:image/png;base64, " + msg.data;
+        };
 
-      img.onload = function() {
-        ws.send("next");
+        img.onload = function () {
+          ws.send("next");
+        };
+      } catch {
+        console.log("WebSocket Connection could not be established");
       }
     </script>
   </body>
