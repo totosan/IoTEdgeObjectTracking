@@ -2,12 +2,14 @@ var imageDpi = 300;
 window.onload = function () {
   var can = document.querySelector("#canvas");
   var img = document.querySelector("#currentImage");
-  var width = (can.width = img.width);
-  var height = (can.height = img.height);
+  can.width = img.width;
+  can.height = img.height;
 
+  img.style.visibility = false ? "visible" : "hidden";
+  img.style.display = "none";
   var context = can.getContext("2d");
+  context.drawImage(img, 10, 10, can.width, can.height);
 
-  context.drawImage(img, 10, 10);
   let startPosition = { x: 0, y: 0 };
   let lineCoordinates = { x: 0, y: 0 };
   let isDrawStart = false;
@@ -17,8 +19,8 @@ window.onload = function () {
 
   const getClientOffset = (event) => {
     const { pageX, pageY } = event.touches ? event.touches[0] : event;
-    const x = pageX - can.offsetLeft;
-    const y = pageY - can.offsetTop;
+      const x = pageX- can.offsetLeft;
+      const y = pageY - can.offsetTop;
 
     return {
       x,
@@ -56,7 +58,7 @@ window.onload = function () {
 
     lineCoordinates = getClientOffset(event);
     clearCanvas();
-    repaintLines();
+    repaintCanvas();
     drawLine();
   };
 
@@ -74,7 +76,7 @@ window.onload = function () {
       lineCollection.activeLine = index;
       //drawLineMarked(lineCollection.lines[index].start, lineCollection.lines[index].end);
       clearCanvas();
-      repaintLines();
+      repaintCanvas();
     }
   };
 
@@ -86,13 +88,17 @@ window.onload = function () {
     context.clearRect(0, 0, can.width, can.height);
   };
 
-  const repaintLines = () => {
+  const repaintCanvas = () => {
+    var img = document.querySelector("#currentImage");
+    context.drawImage(img, 10, 10, can.width, can.height);
+
     lineCollection.lines.forEach((line, i) => {
       if (lineCollection.activeLine === i) context.lineWidth = 6;
       else context.lineWidth = 1;
 
       drawLineL(line.start, line.end);
     });
+
     context.lineWidth = 1;
   };
 
@@ -136,17 +142,17 @@ window.onload = function () {
     var point = findNearestPointOnLine(coord, line.start, line.end);
     var dist = calculateLineLength({ start: coord, end: point });
     return dist;
-    };
-    
-    const keyUpListener = (event) => {
-        event = event || window.event;
-        if (event.key == 'Delete') {
-            lineCollection.lines.splice(lineCollection.activeLine, 1);
-            lineCollection.activeLine = null;
-            clearCanvas();
-            repaintLines();
-        }
+  };
+
+  const keyUpListener = (event) => {
+    event = event || window.event;
+    if (event.key == "Delete") {
+      lineCollection.lines.splice(lineCollection.activeLine, 1);
+      lineCollection.activeLine = null;
+      clearCanvas();
+      repaintCanvas();
     }
+  };
 
   can.addEventListener("mousedown", mouseDownListener);
   can.addEventListener("mousemove", mouseMoveListener);
@@ -156,5 +162,5 @@ window.onload = function () {
   can.addEventListener("touchmove", mouseMoveListener);
   can.addEventListener("touchend", mouseUpListener);
 
-    document.addEventListener("keyup", keyUpListener);
+  document.addEventListener("keyup", keyUpListener);
 };
