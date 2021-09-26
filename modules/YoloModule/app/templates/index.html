@@ -3,19 +3,34 @@
     <title>Video Stream</title>
     <meta http-equiv="content-type" charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="drawApp.js"></script>
+    <script src="drawApp.js" ></script>
+    <link rel="stylesheet" href="custom.css">
   </head>
 
   <body>
-    <img
-      id="currentImage"
+  <div class="outsideWrapper">
+    <div class="insideWrapper">
+        <img id="currentImage" src="../test_images/frame001.jpg" class="coveredImage">
+        <canvas id="canvas" class="coveringCanvas"></canvas>
+    </div>
+</div>
+
+    <!-- <img
+      id="currentImage_old"
       src="../test_images/frame001.jpg"
-      style="border: 2px solid teal; width:100%"
+      style="border: 2px solid teal; width: 100%;"
     />
-    <canvas id="canvas" style="width:100%"> </canvas>
+
+    <canvas id="canvas" ></canvas> -->
+
     <script>
+
       var img = document.getElementById("currentImage");
+    
+      var liner = new DrawLines();
+
       url = document.URL.replace("http", "ws");
+      
       try {
         var ws = new WebSocket(url + "stream");
 
@@ -26,6 +41,7 @@
 
         ws.onmessage = function (msg) {
           img.src = "data:image/png;base64, " + msg.data;
+          setUpCanvas();
         };
 
         img.onload = function () {

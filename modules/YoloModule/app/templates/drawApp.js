@@ -1,114 +1,117 @@
-var imageDpi = 300;
-window.onload = function () {
-  var can = document.querySelector("#canvas");
-  var img = document.querySelector("#currentImage");
-  can.width = img.width;
-  can.height = img.height;
+"use strict";
 
-  img.style.visibility = false ? "visible" : "hidden";
-  img.style.display = "none";
-  var context = can.getContext("2d");
-  context.drawImage(img, 10, 10, can.width, can.height);
+class DrawLines {
+  constructor() {
+    this.can = document.querySelector("#canvas");
+    this.context = this.can.getContext("2d");
 
-  let startPosition = { x: 0, y: 0 };
-  let lineCoordinates = { x: 0, y: 0 };
-  let isDrawStart = false;
-  let lineCollection = {
-    lines: [],
-  };
+    this.startPosition = { x: 0, y: 0 };
+    this.lineCoordinates = { x: 0, y: 0 };
+    this.isDrawStart = false;
+    this.lineCollection = {
+      lines: [],
+    };
+    this.setListeners();
+    this.setUpCanvas();
+  }
 
-  const getClientOffset = (event) => {
+  getClientOffset(event) {
     const { pageX, pageY } = event.touches ? event.touches[0] : event;
-      const x = pageX- can.offsetLeft;
-      const y = pageY - can.offsetTop;
+    const x = pageX - this.can.offsetLeft;
+    const y = pageY - this.can.offsetTop;
 
-    return {
-      x,
-      y,
-    };
-  };
+    return {x,y,};
+  }
 
-  const drawLine = () => {
-    drawLineL(startPosition, lineCoordinates);
-  };
-
-  const drawLineL = (start, end) => {
-    context.beginPath();
-    context.moveTo(start.x, start.y);
-    context.lineTo(end.x, end.y);
-    context.stroke();
-  };
-
-  const drawLineMarked = (start, end) => {
-    context.beginPath();
-    context.moveTo(start.x, start.y);
-    context.lineTo(end.x, end.y);
-    context.lineWidth = 6;
-    context.stroke();
-  };
-
-  const mouseDownListener = (event) => {
-    startPosition = getClientOffset(event);
-    lineCoordinates = Object.assign({}, startPosition);
-    isDrawStart = true;
-  };
-
-  const mouseMoveListener = (event) => {
-    if (!isDrawStart) return;
-
-    lineCoordinates = getClientOffset(event);
-    clearCanvas();
-    repaintCanvas();
-    drawLine();
-  };
-
-  const mouseUpListener = (event) => {
-    isDrawStart = false;
-    var line = {
-      start: Object.assign({}, startPosition),
-      end: Object.assign({}, lineCoordinates),
-    };
-
-    if (calculateLineLength(line) > 10) {
-      addLineToCollection(line);
-    } else {
-      var index = findNearestLineIndex(line.end);
-      lineCollection.activeLine = index;
-      //drawLineMarked(lineCollection.lines[index].start, lineCollection.lines[index].end);
-      clearCanvas();
-      repaintCanvas();
-    }
-  };
-
-  const addLineToCollection = (line) => {
-    lineCollection.lines.push(Object.assign({}, line));
-  };
-
-  const clearCanvas = () => {
-    context.clearRect(0, 0, can.width, can.height);
-  };
-
-  const repaintCanvas = () => {
+    setUpCanvas() {
+    
+    // Feed the size back to the canvas.
     var img = document.querySelector("#currentImage");
-    context.drawImage(img, 10, 10, can.width, can.height);
+    this.can.width = img.width;
+    this.can.height = img.height;
+    //this.context.drawImage(img, 0, 0, this.can.width, this.can.height);
+  }
 
-    lineCollection.lines.forEach((line, i) => {
-      if (lineCollection.activeLine === i) context.lineWidth = 6;
-      else context.lineWidth = 1;
+  drawLine() {
+    this.drawLineL(this.startPosition, this.lineCoordinates);
+  }
 
-      drawLineL(line.start, line.end);
+  drawLineL(start, end) {
+    this.context.beginPath();
+    this.context.moveTo(start.x, start.y);
+    this.context.lineTo(end.x, end.y);
+    this.context.stroke();
+  }
+
+  drawLineMarked(start, end) {
+    this.context.beginPath();
+    this.context.moveTo(start.x, start.y);
+    this.context.lineTo(end.x, end.y);
+    this.context.lineWidth = 6;
+    this.context.stroke();
+  }
+
+  mouseDownListener(event) {
+    this.startPosition = this.getClientOffset(event);
+    this.lineCoordinates = Object.assign({}, this.startPosition);
+    this.isDrawStart = true;
+  }
+
+  mouseMoveListener(event) {
+    if (!this.isDrawStart) return;
+
+    this.lineCoordinates = this.getClientOffset(event);
+    this.clearCanvas();
+    this.repaintCanvas();
+    this.drawLine();
+  }
+
+  mouseUpListener(event) {
+    this.isDrawStart = false;
+    var line = {
+      start: Object.assign({}, this.startPosition),
+      end: Object.assign({}, this.lineCoordinates),
+    };
+
+    if (this.calculateLineLength(line) > 10) {
+      this.addLineToCollection(line);
+    } else {
+      var index = this.findNearestLineIndex(line.end);
+      this.lineCollection.activeLine = index;
+      //drawLineMarked(lineCollection.lines[index].start, lineCollection.lines[index].end);
+      this.clearCanvas();
+      this.repaintCanvas();
+    }
+  }
+
+  addLineToCollection(line) {
+    this.lineCollection.lines.push(Object.assign({}, line));
+  }
+
+  clearCanvas() {
+    this.context.clearRect(0, 0, this.can.width, this.can.height);
+  }
+
+  repaintCanvas() {
+    this.setUpCanvas();
+
+    this.lineCollection.lines.forEach((line, i) => {
+      if (this.lineCollection.activeLine === i) this.context.lineWidth = 6;
+      else this.context.lineWidth = 1;
+
+      this.drawLineL(line.start, line.end);
     });
 
-    context.lineWidth = 1;
-  };
+    this.context.lineWidth = 1;
+  }
 
-  const calculateLineLength = (line) => {
-    X = Math.pow(line.end.x - line.start.x, 2);
-    Y = Math.pow(line.end.y - line.start.y, 2);
+  calculateLineLength(line) {
+    var X = Math.pow(line.end.x - line.start.x, 2);
+    var Y = Math.pow(line.end.y - line.start.y, 2);
     return Math.abs(Math.sqrt(X + Y));
-  };
+  }
 
-  function findNearestPointOnLine(p, a, b) {
+  findNearestPointOnLine(p, a, b) {
     var atob = { x: b.x - a.x, y: b.y - a.y };
     var atop = { x: p.x - a.x, y: p.y - a.y };
     var len = atob.x * atob.x + atob.y * atob.y;
@@ -118,16 +121,16 @@ window.onload = function () {
     return { x: a.x + atob.x * t, y: a.y + atob.y * t };
   }
 
-  const findNearestLine = (coord) => {
-    return lineCollection.lines[findNearestLineIndex(coord)];
-  };
+  findNearestLine(coord) {
+    return this.lineCollection.lines[this.findNearestLineIndex(coord)];
+  }
 
-  const findNearestLineIndex = (coord) => {
+  findNearestLineIndex(coord) {
     let listOfLines = [];
 
-    for (i = 0; i < lineCollection.lines.length; i++) {
-      var line = lineCollection.lines[i];
-      dist = distanceToLine(coord, line);
+    for (var i = 0; i < this.lineCollection.lines.length; i++) {
+      var line = this.lineCollection.lines[i];
+      var dist = this.distanceToLine(coord, line);
       listOfLines.push({ index: i, distance: dist });
     }
     listOfLines.sort((a, b) => {
@@ -136,31 +139,34 @@ window.onload = function () {
       return 0;
     });
     return listOfLines[0].index;
-  };
+  }
 
-  const distanceToLine = (coord, line) => {
-    var point = findNearestPointOnLine(coord, line.start, line.end);
-    var dist = calculateLineLength({ start: coord, end: point });
+  distanceToLine(coord, line) {
+    var point = this.findNearestPointOnLine(coord, line.start, line.end);
+    var dist = this.calculateLineLength({ start: coord, end: point });
     return dist;
-  };
+  }
 
-  const keyUpListener = (event) => {
+  keyUpListener(event) {
     event = event || window.event;
     if (event.key == "Delete") {
-      lineCollection.lines.splice(lineCollection.activeLine, 1);
-      lineCollection.activeLine = null;
-      clearCanvas();
-      repaintCanvas();
+      this.lineCollection.lines.splice(this.lineCollection.activeLine, 1);
+      this.lineCollection.activeLine = null;
+      this.clearCanvas();
+      this.repaintCanvas();
     }
+  }
+
+  setListeners = () => {
+      this.can.addEventListener("mousedown", event => this.mouseDownListener(event));
+    this.can.addEventListener("mousemove", event=> this.mouseMoveListener(event));
+    this.can.addEventListener("mouseup", event => this.mouseUpListener(event));
+
+    this.can.addEventListener("touchstart", event=> this.mouseDownListener(event));
+    this.can.addEventListener("touchmove", event=> this.mouseMoveListener(event));
+    this.can.addEventListener("touchend", event=> this.mouseUpListener(event));
+
+    document.addEventListener("keyup", event=> this.keyUpListener(event));
+    document.addEventListener("resize", event=> this.setUpCanvas(event));
   };
-
-  can.addEventListener("mousedown", mouseDownListener);
-  can.addEventListener("mousemove", mouseMoveListener);
-  can.addEventListener("mouseup", mouseUpListener);
-
-  can.addEventListener("touchstart", mouseDownListener);
-  can.addEventListener("touchmove", mouseMoveListener);
-  can.addEventListener("touchend", mouseUpListener);
-
-  document.addEventListener("keyup", keyUpListener);
-};
+}
