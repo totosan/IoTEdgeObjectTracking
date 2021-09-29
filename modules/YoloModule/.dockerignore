@@ -1,0 +1,7 @@
+test_images
+server.js
+package*.json
+node_modules
+.gitignore
+.vscode
+__pycache__

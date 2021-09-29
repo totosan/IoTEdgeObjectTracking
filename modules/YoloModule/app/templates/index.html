@@ -4,7 +4,7 @@
   <title>Video Stream</title>
   <meta http-equiv="content-type" charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="drawApp.js"></script>
+  <!-- <script type="module" src="./drawApp.js"></script> -->
   <link rel="stylesheet" href="custom.css">
 </head>
 
@@ -16,16 +16,45 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import DrawLines from "./drawApp.js"
 
+    var initialLines = {"lines":[{"start":{"x":765,"y":923},"end":{"x":673,"y":1063}}],"frameSize":[0,0,1664,1248],"scale":{"x":0.9909855769230769,"y":0.9911858974358975}};
     var img = document.getElementById("currentImage");
-
-    var liner = new DrawLines("canvas","currentImage",img);
-
-    url = document.URL.replace("http", "ws");
-
+    var canvas = document.getElementById("canvas");
+    let init = true;
+    var liner = new DrawLines(canvas, img);
+    
+    var url = document.URL.replace("http", "ws");
+    
     try {
+      var callbackForDrawing = (event) => {
+        img.onload = () => {
+          if(init){
+            liner.initObject();
+            liner.setLines = initialLines;
+            init = false;
+          }
+          liner.setUpCanvas();
+          liner.refreshCanvas();
+        }
+
+        if (ws && url.indexOf('localhost')) { // if websocket object defined
+          img.src = "http://localhost:8080/img/frame001.jpg"
+
+          setInterval(() => {
+            if (ws)
+              img.src = "http://localhost:8080/img/frame001.jpg"
+          }, 100)
+        }
+        liner.resizeWindow();
+      }
+
       var ws = new WebSocket(url + "stream");
+      ws.onerror = (event) => {
+        console.log("Fehler WS");
+        callbackForDrawing(event)
+      };
 
       ws.onopen = function () {
         console.log("connection was established");
@@ -35,25 +64,21 @@
       ws.onmessage = function (msg) {
         img.src = "data:image/png;base64, " + msg.data;
       };
-      
+
       img.onload = function () {
+        if(init){
+          liner.initObject();
+            liner.setLines = initialLines;
+            init = false;
+        }
         liner.setUpCanvas();
-        liner.repaintCanvas()
+        liner.refreshCanvas();
         ws.send("next");
       };
     } catch {
       console.log("WebSocket Connection could not be established");
-     
-      img.onload = ev => {
-        liner.setUpCanvas();
-        liner.repaintCanvas()
-      }
-      img.src = "../test_images/frame001.jpg"
-      liner.resizeWindow();
 
-      setInterval(()=>{
-        img.src = "../test_images/frame001.jpg"
-      },100)
+      callbackForDrawing();
     }
   </script>
 </body>
