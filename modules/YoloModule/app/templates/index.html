@@ -18,19 +18,20 @@
 
   <script type="module">
     import DrawLines from "./drawApp.js"
+    import WSMessage from "./WSMessage.js"
 
-    var initialLines = {"lines":[{"start":{"x":765,"y":923},"end":{"x":673,"y":1063}}],"frameSize":[0,0,1664,1248],"scale":{"x":0.9909855769230769,"y":0.9911858974358975}};
+    var initialLines = { "lines": [{ "start": { "x": 765, "y": 923 }, "end": { "x": 673, "y": 1063 } }], "frameSize": [0, 0, 1664, 1248], "scale": { "x": 0.9909855769230769, "y": 0.9911858974358975 } };
     var img = document.getElementById("currentImage");
     var canvas = document.getElementById("canvas");
     let init = true;
     var liner = new DrawLines(canvas, img);
-    
+
     var url = document.URL.replace("http", "ws");
-    
+
     try {
       var callbackForDrawing = (event) => {
         img.onload = () => {
-          if(init){
+          if (init) {
             liner.initObject();
             liner.setLines = initialLines;
             init = false;
@@ -39,7 +40,7 @@
           liner.refreshCanvas();
         }
 
-        if (ws && url.indexOf('localhost')) { // if websocket object defined
+        if (false && ws && url.indexOf('localhost')) { // if websocket object defined
           img.src = "http://localhost:8080/img/frame001.jpg"
 
           setInterval(() => {
@@ -51,6 +52,7 @@
       }
 
       var ws = new WebSocket(url + "stream");
+      //ws.binaryType = "arraybuffer";
       ws.onerror = (event) => {
         console.log("Fehler WS");
         callbackForDrawing(event)
@@ -58,28 +60,45 @@
 
       ws.onopen = function () {
         console.log("connection was established");
-        ws.send("next");
+        var msg = new WSMessage('command','next');
+        ws.send(JSON.stringify(msg));
       };
 
       ws.onmessage = function (msg) {
-        img.src = "data:image/png;base64, " + msg.data;
+        var m = WSMessage.fromText(msg.data);
+        if (m.Type == "image") {
+          img.src = "data:image/png;base64, " + m.Payload;
+        }
       };
 
       img.onload = function () {
-        if(init){
+        if (init) {
           liner.initObject();
-            liner.setLines = initialLines;
-            init = false;
+          liner.setLines = initialLines;
+          init = false;
         }
         liner.setUpCanvas();
         liner.refreshCanvas();
-        ws.send("next");
+
+        var msg = new WSMessage('command','next');
+        ws.send(JSON.stringify(msg));
       };
+
     } catch {
       console.log("WebSocket Connection could not be established");
 
       callbackForDrawing();
     }
+    function keyUpListener (event){
+      event = event || window.event;
+      if (event.key == "Delete" ) {
+        liner.removeCurrentLine();
+      }
+      if (event.key == "s") {
+        console.log(liner.lineCollection);
+      }
+    }
+  document.addEventListener("keyup", keyUpListener);
   </script>
 </body>
 

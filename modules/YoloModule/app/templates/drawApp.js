@@ -157,13 +157,19 @@ export default class DrawLines {
     this.lineCollection.lines.push(Object.assign({}, line));
   }
 
-  #keyUpListener(event) {
-    event = event || window.event;
-    if (event.key == "Delete" && this.lineCollection.activeLine > -1) {
+  removeCurrentLine() {
+    if (this.lineCollection.activeLine > -1) {
       this.lineCollection.lines.splice(this.lineCollection.activeLine, 1);
       this.lineCollection.activeLine = -1;
       this.#clearCanvas();
       this.refreshCanvas();
+    }
+  }
+  
+  #keyUpListener(event) {
+    event = event || window.event;
+    if (event.key == "Delete" && this.lineCollection.activeLine > -1) {
+      this.removeCurrentLine();
     }
     if (event.key == "s") {
       console.log(JSON.stringify(this.lineCollection));
@@ -190,8 +196,7 @@ export default class DrawLines {
     this.can.addEventListener("touchend", (event) =>
       this.#mouseUpListener(event)
     );
-    this.img.addEventListener("load", (event) => {});
-    document.addEventListener("keyup", (event) => this.#keyUpListener(event));
+    //document.addEventListener("keyup", (event) => this.#keyUpListener(event));
     window.addEventListener("resize", (event) => this.resizeWindow());
   }
 }

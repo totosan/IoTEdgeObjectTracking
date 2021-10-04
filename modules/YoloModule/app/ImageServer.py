@@ -5,6 +5,7 @@ import tornado.web
 import tornado.websocket
 import threading
 import base64
+import json
 import os
 
 class ImageStreamHandler(tornado.websocket.WebSocketHandler):
@@ -21,11 +22,14 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
         print("Image Server Connection::opened")
 
     def on_message(self, msg):
+        newMsg = {'type':'image',
+                  'payload':None}
         if msg == 'next':
             frame = self.videoCapture.get_display_frame()
             if frame != None:
                 encoded = base64.b64encode(frame)
-                self.write_message(encoded, binary=False)
+                newMsg["payload"] = encoded
+                self.write_message(json.dumps( newMsg), binary=False)
 
     def on_close(self):
         self.clients.remove(self)
