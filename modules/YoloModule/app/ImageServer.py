@@ -8,6 +8,7 @@ import base64
 import json
 import os
 
+
 class ImageStreamHandler(tornado.websocket.WebSocketHandler):
 
     def initialize(self, videoCapture):
@@ -21,19 +22,22 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
         self.clients.append(self)
         print("Image Server Connection::opened")
 
-    def on_message(self, msg):
-        newMsg = {'type':'image',
-                  'payload':None}
-        if msg == 'next':
-            frame = self.videoCapture.get_display_frame()
-            if frame != None:
-                encoded = base64.b64encode(frame)
-                newMsg["payload"] = encoded
-                self.write_message(json.dumps( newMsg), binary=False)
+    def on_message(self, message):
+        newMsg = {'type': 'image',
+                  'payload': None}
+        msg = json.loads(message);
+        if msg['type'] == 'command':
+            if msg['payload'] == 'next':
+                frame = self.videoCapture.get_display_frame()
+                if frame != None:
+                    encoded = base64.b64encode(frame)
+                    newMsg["payload"] = encoded.decode('ascii')
+                    self.write_message(json.dumps(newMsg), binary=False)
 
     def on_close(self):
         self.clients.remove(self)
         print("Image Server Connection::closed")
+
 
 class ImageServer(threading.Thread):
 
@@ -44,22 +48,25 @@ class ImageServer(threading.Thread):
         self.videoCapture = videoCapture
 
     def run(self):
-        print ('ImageServer::run() : Started Image Server')
+        print('ImageServer::run() : Started Image Server')
         try:
             loop = asyncio.new_event_loop()
-            asyncio.set_event_loop( loop )
+            asyncio.set_event_loop(loop)
 
-            indexPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'templates')
+            indexPath = os.path.join(os.path.dirname(
+                os.path.realpath(__file__)), 'templates')
             app = tornado.web.Application([
-                (r"/stream", ImageStreamHandler, {'videoCapture': self.videoCapture}),
-                (r"/(.*)", tornado.web.StaticFileHandler, {'path': indexPath, 'default_filename': 'index.html'})
+                (r"/stream", ImageStreamHandler,
+                 {'videoCapture': self.videoCapture}),
+                (r"/(.*)", tornado.web.StaticFileHandler,
+                 {'path': indexPath, 'default_filename': 'index.html'})
             ])
             app.listen(self.port)
-            print ('ImageServer::Started.')
+            print('ImageServer::Started.')
 
             tornado.ioloop.IOLoop.instance().start()
         except Exception as e:
-            print('ImageServer::exited run loop. Exception - '+ str(e))
+            print('ImageServer::exited run loop. Exception - ' + str(e))
 
     def close(self):
-        print ('ImageServer::close()')
+        print('ImageServer::close()')

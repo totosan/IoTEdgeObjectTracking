@@ -91,10 +91,10 @@
     }
     function keyUpListener (event){
       event = event || window.event;
-      if (event.key == "Delete" ) {
+      if (event.key == "Delete" ) { // delete line
         liner.removeCurrentLine();
       }
-      if (event.key == "s") {
+      if (event.key == "s") { // save current drawing
         console.log(liner.lineCollection);
       }
     }
