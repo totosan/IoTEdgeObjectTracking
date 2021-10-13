@@ -14,6 +14,7 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
     def initialize(self, videoCapture):
         self.clients = []
         self.videoCapture = videoCapture
+        self.edit = videoCapture.RulesEdit
 
     def check_origin(self, origin):
         return True
@@ -23,20 +24,30 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
         print("Image Server Connection::opened")
 
     def on_message(self, message):
-        newMsg = {'type': 'image',
-                  'payload': None}
         msg = json.loads(message);
         if msg['type'] == 'command':
             if msg['payload'] == 'next':
-                frame = self.videoCapture.get_display_frame()
-                if frame != None:
-                    encoded = base64.b64encode(frame)
-                    newMsg["payload"] = encoded.decode('ascii')
-                    self.write_message(json.dumps(newMsg), binary=False)
+                self.send_image(self.videoCapture)
+                self.rules_edit_mode(self.videoCapture)
 
     def on_close(self):
         self.clients.remove(self)
         print("Image Server Connection::closed")
+        
+    def send_image(self, capture):
+        newMsg = {'type': 'image','payload': None}
+        frame = capture.get_display_frame()
+        if frame != None:
+            encoded = base64.b64encode(frame)
+            newMsg["payload"] = encoded.decode('ascii')
+            self.write_message(json.dumps(newMsg), binary=False)       
+            
+    def rules_edit_mode(self, capture):
+        if not self.edit == capture.RulesEdit:
+            self.edit = capture.RulesEdit
+            rulesEdit = {'ModeName':'RulesEdit','Value':self.edit}
+            newMsg = {'type':'mode','payload':rulesEdit}
+            self.write_message(json.dumps(newMsg), binary=False) 
 
 
 class ImageServer(threading.Thread):
@@ -46,7 +57,16 @@ class ImageServer(threading.Thread):
         self.setDaemon(True)
         self.port = port
         self.videoCapture = videoCapture
-
+        self.edit = False
+    
+    def get_edit(self):
+        return self._edit
+    
+    def set_edit(self,value):
+        self._edit = value
+    
+    edit = property(get_edit, set_edit)
+    
     def run(self):
         print('ImageServer::run() : Started Image Server')
         try:

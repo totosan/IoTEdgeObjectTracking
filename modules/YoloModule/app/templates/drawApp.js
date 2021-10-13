@@ -11,6 +11,8 @@ export default class DrawLines {
     this.scaleX = -1;
     this.scaleY = -1;
 
+    this.enabled = false;
+
     this.startPosition = { x: 0, y: 0 };
     this.lineCoordinates = { x: 0, y: 0 };
     this.isDrawStart = false;
@@ -165,7 +167,7 @@ export default class DrawLines {
       this.refreshCanvas();
     }
   }
-  
+
   #keyUpListener(event) {
     event = event || window.event;
     if (event.key == "Delete" && this.lineCollection.activeLine > -1) {
@@ -177,26 +179,27 @@ export default class DrawLines {
   }
 
   #setListeners() {
-    this.can.addEventListener("mousedown", (event) =>
-      this.#mouseDownListener(event)
-    );
-    this.can.addEventListener("mousemove", (event) =>
-      this.#mouseMoveListener(event)
-    );
-    this.can.addEventListener("mouseup", (event) =>
-      this.#mouseUpListener(event)
-    );
-
-    this.can.addEventListener("touchstart", (event) =>
-      this.#mouseDownListener(event)
-    );
-    this.can.addEventListener("touchmove", (event) =>
-      this.#mouseMoveListener(event)
-    );
-    this.can.addEventListener("touchend", (event) =>
-      this.#mouseUpListener(event)
-    );
-    //document.addEventListener("keyup", (event) => this.#keyUpListener(event));
+    this.can.addEventListener("mousedown", (event) => {
+      if (this.enabled) this.#mouseDownListener(event);
+    });
+    this.can.addEventListener("mousemove", (event) => {
+      if (this.enabled) this.#mouseMoveListener(event);
+    });
+    this.can.addEventListener("mouseup", (event) => {
+      if (this.enabled) this.#mouseUpListener(event);
+    });
+/*
+    this.can.addEventListener("touchstart", (event) => {
+      if (this.enabled) this.#mouseDownListener(event);
+    });
+    this.can.addEventListener("touchmove", (event) => {
+      if (this.enabled) this.#mouseMoveListener(event);
+    });
+    this.can.addEventListener("touchend", (event) => {
+      if (this.enabled) this.#mouseUpListener(event);
+    });
+    */
+    
     window.addEventListener("resize", (event) => this.resizeWindow());
   }
 }

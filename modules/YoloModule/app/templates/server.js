@@ -1,3 +1,4 @@
+import internal from "stream";
 import WSMessage from "./WSMessage.js";
 
 const express = require("express");
@@ -9,9 +10,8 @@ const app = express();
 const server = http.createServer(app);
 
 var testfolder = path.resolve(__dirname, "..", "test_images");
-var testImage = fileSystem.readFileSync(testfolder + "/frame001.jpg", {
-  encoding: "base64",
-});
+var testImage = fileSystem.readFileSync(testfolder + "/frame001.jpg", { encoding: "base64",});
+let rulesEditEnabled = false;
 
 express.static.mime.define({ "application/javascript": ["js"] });
 app.use("/", express.static(__dirname + "/"));
@@ -30,6 +30,12 @@ ws.on("connection", function connection(wsConnection) {
     if (msg.type == "command" && msg.payload == "next") {
       let msg = new WSMessage("image", testImage);
       wsConnection.send(JSON.stringify(msg));
+
+      if (rulesEditEnabled == true) {
+        msg.type = 'mode';
+        msg.payload = { 'ModeName': 'RulesEdit', 'Value': true };
+        wsConnection.send(JSON.stringify(msg));
+      }
     }
   });
 });

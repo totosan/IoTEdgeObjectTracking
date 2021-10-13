@@ -69,6 +69,12 @@
         if (m.Type == "image") {
           img.src = "data:image/png;base64, " + m.Payload;
         }
+
+        if(m.Type == "mode"){
+          if(m.Payload.ModeName == 'RulesEdit'){
+            liner.enabled = m.Payload.Value;
+          }
+        }
       };
 
       img.onload = function () {
