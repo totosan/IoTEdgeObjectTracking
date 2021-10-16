@@ -11,7 +11,8 @@ const server = http.createServer(app);
 
 var testfolder = path.resolve(__dirname, "..", "test_images");
 var testImage = fileSystem.readFileSync(testfolder + "/frame001.jpg", { encoding: "base64",});
-let rulesEditEnabled = false;
+let CURRENTSTATES = { 'RulesEdit': false };
+let rulesEditState = true;
 
 express.static.mime.define({ "application/javascript": ["js"] });
 app.use("/", express.static(__dirname + "/"));
@@ -27,15 +28,23 @@ const ws = new WebSocket.Server({ server: server, path: "/stream" });
 ws.on("connection", function connection(wsConnection) {
   wsConnection.on("message", function incoming(message) {
     var msg = WSMessage.fromText(message);
-    if (msg.type == "command" && msg.payload == "next") {
-      let msg = new WSMessage("image", testImage);
-      wsConnection.send(JSON.stringify(msg));
-
-      if (rulesEditEnabled == true) {
-        msg.type = 'mode';
-        msg.payload = { 'ModeName': 'RulesEdit', 'Value': true };
+    if (msg.type == "command") {
+      if (msg.payload.name == "next") {
+        let msg = new WSMessage("image", testImage);
         wsConnection.send(JSON.stringify(msg));
+
+        if (CURRENTSTATES.RulesEdit != rulesEditState) {
+          msg.type = 'mode';
+          msg.payload = { 'ModeName': 'RulesEdit', 'Value': rulesEditState };
+          wsConnection.send(JSON.stringify(msg));
+        }
       }
+      if (msg.payload.name == "save") {
+        console.log(msg.payload.content);
+      }
+    }
+    if (msg.type == "report") {
+      CURRENTSTATES = msg.payload;
     }
   });
 });

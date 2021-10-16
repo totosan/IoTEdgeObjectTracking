@@ -8,7 +8,13 @@ import base64
 import json
 import os
 
-
+try:
+    import ptvsd
+    __myDebug__ = True 
+    ptvsd.enable_attach(('0.0.0.0',  5678))   
+except ImportError:
+    __myDebug__ = False
+    
 class ImageStreamHandler(tornado.websocket.WebSocketHandler):
 
     def initialize(self, videoCapture):
@@ -26,9 +32,13 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
         msg = json.loads(message);
         if msg['type'] == 'command':
-            if msg['payload'] == 'next':
+            if 'name' in msg['payload'] and msg['payload']['name'] == 'next':
                 self.send_image(self.videoCapture)
                 self.rules_edit_mode(self.videoCapture)
+            if 'name' in msg['payload'] and msg['payload']['name'] == 'save' and self.edit:
+                print(f"Saved: {msg['payload']['content']}")
+        if msg['type'] == 'report':
+            self.get_report(msg)
 
     def on_close(self):
         self.clients.remove(self)
@@ -44,11 +54,13 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
             
     def rules_edit_mode(self, capture):
         if not self.edit == capture.RulesEdit:
-            self.edit = capture.RulesEdit
-            rulesEdit = {'ModeName':'RulesEdit','Value':self.edit}
+            rulesEdit = {'ModeName':'RulesEdit','Value':capture.RulesEdit}
             newMsg = {'type':'mode','payload':rulesEdit}
-            self.write_message(json.dumps(newMsg), binary=False) 
-
+            self.write_message(json.dumps(newMsg), binary=False)
+            print(f"Send RulesEdit mode: {capture.RulesEdit}")
+    
+    def get_report(self, message):
+        self.edit = bool(message['payload']['RulesEdit'])
 
 class ImageServer(threading.Thread):
 

@@ -118,7 +118,7 @@ def device_twin_send_reported(hubManager):
 
 def send_reported_state_callback(status_code, user_context):
     print("\r\nsend_reported_state_callback()")
-    print("   - status_code : [%d]" % (status_code) )
+    print("   - status_code : [%d]" % (status_code))
 
 
 def ip4_addresses():

@@ -24,7 +24,8 @@
     var img = document.getElementById("currentImage");
     var canvas = document.getElementById("canvas");
     let init = true;
-    var liner = new DrawLines(canvas, img);
+    let liner = new DrawLines(canvas, img);
+    let CURRENTSTATES = { 'RulesEdit': false };
 
     var url = document.URL.replace("http", "ws");
 
@@ -40,14 +41,6 @@
           liner.refreshCanvas();
         }
 
-        if (false && ws && url.indexOf('localhost')) { // if websocket object defined
-          img.src = "http://localhost:8080/img/frame001.jpg"
-
-          setInterval(() => {
-            if (ws)
-              img.src = "http://localhost:8080/img/frame001.jpg"
-          }, 100)
-        }
         liner.resizeWindow();
       }
 
@@ -60,7 +53,8 @@
 
       ws.onopen = function () {
         console.log("connection was established");
-        var msg = new WSMessage('command','next');
+        var command = { 'name': 'next' };
+        var msg = new WSMessage('command', command);
         ws.send(JSON.stringify(msg));
       };
 
@@ -70,10 +64,13 @@
           img.src = "data:image/png;base64, " + m.Payload;
         }
 
-        if(m.Type == "mode"){
-          if(m.Payload.ModeName == 'RulesEdit'){
+        if (m.Type == "mode") {
+          if (m.Payload.ModeName == 'RulesEdit') {
+            CURRENTSTATES.RulesEdit = m.Payload.Value;
             liner.enabled = m.Payload.Value;
           }
+          let report = new WSMessage('report', CURRENTSTATES)
+          ws.send(JSON.stringify(report));
         }
       };
 
@@ -86,25 +83,29 @@
         liner.setUpCanvas();
         liner.refreshCanvas();
 
-        var msg = new WSMessage('command','next');
+        var command = { 'name': 'next' }
+        var msg = new WSMessage('command', command);
         ws.send(JSON.stringify(msg));
       };
 
     } catch {
       console.log("WebSocket Connection could not be established");
-
       callbackForDrawing();
     }
-    function keyUpListener (event){
+
+    function keyUpListener(event) {
       event = event || window.event;
-      if (event.key == "Delete" ) { // delete line
+      if (event.key == "Delete") { // delete line
         liner.removeCurrentLine();
       }
       if (event.key == "s") { // save current drawing
         console.log(liner.lineCollection);
+        let command = { 'name': 'save', 'content': liner.lineCollection };
+        let msg = new WSMessage('command', command);
+        ws.send(JSON.stringify(msg));
       }
     }
-  document.addEventListener("keyup", keyUpListener);
+    document.addEventListener("keyup", keyUpListener);
   </script>
 </body>
 
