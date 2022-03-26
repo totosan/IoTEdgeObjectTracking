@@ -6,3 +6,4 @@ venv
 
 config/*
 !config/.gitkeep
+*.local.*
