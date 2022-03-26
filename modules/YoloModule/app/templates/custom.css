@@ -1,0 +1,18 @@
+body{
+    margin:0px;
+}
+.outsideWrapper{ 
+    width:100%; 
+    margin:0px 0px; 
+    border:1px solid blue;}
+.insideWrapper{ 
+    width:100%; 
+    position:relative;}
+.coveredImage{ 
+    width:100%;  
+    position:absolute; top:0px; left:0px;
+}
+.coveringCanvas{ 
+    width:100%;  
+    position:absolute; top:0px; left:0px;
+}

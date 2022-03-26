@@ -67,6 +67,7 @@ class VideoCapture(object):
         self.url = ""
         self.detectionSampleRate = detectionSampleRate
         self.imageProcessingEndpoint = imageProcessingEndpoint
+        self.RulesEdit = False
 
         print("VideoCapture::__init__()")
         print("OpenCV Version : %s" % (cv2.__version__))

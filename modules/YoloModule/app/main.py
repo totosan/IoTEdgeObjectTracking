@@ -88,13 +88,17 @@ def device_twin_callback(update_state, payload, user_context):
         if jsonData['DetectionSampleRate'] > 0:
             videoCapture.detectionSampleRate = int(jsonData['DetectionSampleRate'])
         
-
+    if "RulesEdit" in jsonData:
+        print("   - Editing rules   : " + str(jsonData['RulesEdit']))
+        videoCapture.RulesEdit = bool(jsonData['RulesEdit'])
+        
+        
     device_twin_send_reported(hubManager)
 
 def device_twin_send_reported(hubManager):
     global videoCapture
 
-    jsonTemplate = "{\"ConfidenceLevel\": \"%s\",\"VerboseMode\": %d,\"Inference\": %d, \"VideoSource\":\"%s\", \"DetectionSampleRate\": %d, \"LocalIPs\":\"%s\"}"
+    jsonTemplate = "{\"ConfidenceLevel\": \"%s\",\"VerboseMode\": %d,\"Inference\": %d, \"VideoSource\":\"%s\", \"DetectionSampleRate\": %d, \"RulesEdit\": %s}"
 
     strUrl = videoCapture.videoPath
     hostips = ip4_addresses()
@@ -104,7 +108,7 @@ def device_twin_send_reported(hubManager):
         videoCapture.inference,
         strUrl,
         videoCapture.detectionSampleRate,
-        hostips
+        videoCapture.RulesEdit
         )
 
     print("\r\ndevice_twin_send_reported()")
@@ -114,7 +118,7 @@ def device_twin_send_reported(hubManager):
 
 def send_reported_state_callback(status_code, user_context):
     print("\r\nsend_reported_state_callback()")
-    print("   - status_code : [%d]" % (status_code) )
+    print("   - status_code : [%d]" % (status_code))
 
 
 def ip4_addresses():
