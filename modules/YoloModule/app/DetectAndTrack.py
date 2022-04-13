@@ -1,3 +1,4 @@
+from operator import truediv
 import AppState
 
 import iothub_client
@@ -32,7 +33,7 @@ try:
 except ImportError:
     print("ptvsd is not installed. Please install it.")
     
-__myDebug__ = False
+__myDebug__ = True
 
 def clipImage(image, clipregion):
     x = clipregion[0]
@@ -190,10 +191,8 @@ class DetectAndTrack():
                 rect = dlib.rectangle(startX, startY, endX, endY)
 
                 if __myDebug__:
-                    cv2.rectangle(frame, (startX, startY),
-                                  (endX, endY), (0, 0, 0), 1)
-                    cv2.putText(frame, class_type, (startX, startY),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+                    cv2.rectangle(frame, (startX, startY),(endX, endY), (0, 0, 0), 1)
+                    cv2.putText(frame, class_type, (startX, startY),cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
 
                 tracker.start_track(rgb, rect)
 
@@ -228,10 +227,8 @@ class DetectAndTrack():
                 rects.append(trackerContainer.rect)
 
                 if __myDebug__:
-                    cv2.rectangle(frame, (startX, startY),
-                                  (endX, endY), (0, 0, 0), 2)
-                    cv2.putText(frame, trackerContainer.class_type, (startX, startY),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    cv2.rectangle(frame, (startX, startY),(endX, endY), (0, 0, 0), 1)
+                    cv2.putText(frame, trackerContainer.class_type, (startX, startY),cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
 
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
@@ -323,8 +320,8 @@ class DetectAndTrack():
             colorCircle = (20, 250, 130)
             colorArrow = (0,0,250)
             colorText = (0, 255, 0)
-            text = "{}: {}".format(objectID, to.type)
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.4, colorText, 1)
+            text = "{}".format(objectID)
+            cv2.putText(frame, text, (rect[0],rect[1]),cv2.FONT_HERSHEY_SIMPLEX, 0.3, colorText, 1)
             cv2.circle(frame, (centroid[0], centroid[1]), 2, colorCircle , -1)
             cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 1)
             #if len(to.centroids)>1 :
