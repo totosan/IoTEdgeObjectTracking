@@ -29,9 +29,10 @@ from azure.storage.blob._shared.base_client import create_configuration
 
 try:
     import ptvsd
-    __myDebug__ = True
 except ImportError:
-    __myDebug__ = False
+    print("ptvsd is not installed. Please install it.")
+    
+__myDebug__ = False
 
 def clipImage(image, clipregion):
     x = clipregion[0]
@@ -260,7 +261,7 @@ class DetectAndTrack():
                 rect2 = (rect[0]*ratioW, rect[1]*ratioH,rect[2]*ratioW,rect[3]*ratioH)
                 clipped = clipImage(origFrame, rect2)
                 
-                if className == 'car' or className == 'truck':
+                if className == 'truck':
                     details = self.__getObjectDetails__(origFrame, rect, typeName=className)
                     if details and len(details) > 0:
                         predictions = details["predictions"]
@@ -323,9 +324,9 @@ class DetectAndTrack():
             colorArrow = (0,0,250)
             colorText = (0, 255, 0)
             text = "{}: {}".format(objectID, to.type)
-            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.5, colorText, 1)
-            cv2.circle(frame, (centroid[0], centroid[1]), 4, colorCircle , -1)
-            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 2)
+            cv2.putText(frame, text, (centroid[0] - 10, centroid[1] - 10),cv2.FONT_HERSHEY_SIMPLEX, 0.4, colorText, 1)
+            cv2.circle(frame, (centroid[0], centroid[1]), 2, colorCircle , -1)
+            cv2.arrowedLine(frame, (centroid[0], centroid[1]), (centroid[0]+directX, centroid[1]+directY), colorArrow, 1)
             #if len(to.centroids)>1 :
             #    cv2.polylines(frame, np.int32(to.centroids), True, colorCircle, 1)
         # increment the total number of frames processed thus far and
