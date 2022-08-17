@@ -360,9 +360,12 @@ class VideoCapture(object):
                 print("ERROR : Exception during capturing")
                 raise(e)
 
-            # Resize frame if flagged
             origFrame = frame.copy()
+            
+            # Resize frame if flagged
             if needResizeFrame:
+                # crop irrelavent parts of the frame
+                frame = frame[round(cameraH/3):cameraH, 0:round(cameraW*(0.3333+(0.3333/2)))]
                 frame = cv2.resize(frame, (self.videoW, self.videoH))
 
             # Run Object Detection -- GUARD

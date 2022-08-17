@@ -192,7 +192,7 @@ class DetectAndTrack():
 
                 if __myDebug__:
                     cv2.rectangle(frame, (startX, startY),(endX, endY), (0, 0, 0), 1)
-                    cv2.putText(frame, class_type, (startX, startY),cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
+                    cv2.putText(frame, class_type, (startX, endY),cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
 
                 tracker.start_track(rgb, rect)
 
@@ -228,7 +228,7 @@ class DetectAndTrack():
 
                 if __myDebug__:
                     cv2.rectangle(frame, (startX, startY),(endX, endY), (0, 0, 0), 1)
-                    cv2.putText(frame, trackerContainer.class_type, (startX, startY),cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
+                    cv2.putText(frame, trackerContainer.class_type, (startX, endY),cv2.FONT_HERSHEY_SIMPLEX, 0.3, (0, 255, 0), 1)
 
         # use the centroid tracker to associate the (1) old object
         # centroids with (2) the newly computed object centroids
