@@ -87,6 +87,8 @@ class VideoCapture(object):
         self.imageServer.start()
 
         self.yoloInference = YoloInference(self.fontScale)
+        self.linesRaw = None
+        self.markerLine = None
 
     def __IsCaptureDev(self, videoPath):
         try:
@@ -367,7 +369,16 @@ class VideoCapture(object):
                 # crop irrelavent parts of the frame
                 frame = frame[round(cameraH/3):cameraH, 0:round(cameraW*(0.3333+(0.3333/2)))]
                 frame = cv2.resize(frame, (self.videoW, self.videoH))
-
+            
+            if self.linesRaw:
+                framesize_in_browser = self.linesRaw['frameSize']
+                scale = {'x': framesize_in_browser['2']/self.videoW, 'y': framesize_in_browser['3']/self.videoH}
+                self.markerLine = {
+                        'start':(int(self.linesRaw['lines'][0]['start']['x']/scale['x']),int(self.linesRaw['lines'][0]['start']['y']/scale['y'])),
+                        'end':(int(self.linesRaw['lines'][0]['end']['x']/scale['x']),int(self.linesRaw['lines'][0]['end']['y']/scale['y']))
+                        }
+                detectionTracker.markerLines = [self.markerLine]
+                
             # Run Object Detection -- GUARD
             if self.inference:
                 #yoloDetections = self.yoloInference.runInference(frame, frameW, frameH, self.confidenceLevel)
@@ -381,10 +392,15 @@ class VideoCapture(object):
                 # Cannot go faster than Camera's FPS
                 currentFPS = cameraFPS
 
+            # add markerLine to frame
+            if self.markerLine:
+                cv2.line(frame, self.markerLine['start'], self.markerLine['end'],(0,0,255),thickness=1)
+                
             # Add FPS Text to the frame
-            cv2.putText(frame, "FPS " + str(round(currentFPS, 1)), (10, int(30 *
-                                                                            self.fontScale)), cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, (0, 0, 255), 2)
-
+            cv2.putText(frame, f"FPS {str(round(currentFPS, 1))} [CountIn: {detectionTracker.totalDown}/ CountOut: {detectionTracker.totalUp}]", 
+                        (10, int(30 * self.fontScale)),
+                        cv2.FONT_HERSHEY_SIMPLEX, self.fontScale, (0, 0, 255), 2)
+                
             self.displayFrame = cv2.imencode('.jpg', frame)[1].tobytes()
 
             timeElapsedInMs = (time.time() - tFrameStart) * 1000

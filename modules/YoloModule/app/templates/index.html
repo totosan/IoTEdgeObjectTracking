@@ -79,6 +79,9 @@
           liner.initObject();
           liner.setLines = initialLines;
           init = false;
+          command = { 'name': 'initLines', 'content': liner.lineCollection };
+          msg = new WSMessage('command', command);
+          ws.send(JSON.stringify(msg));
         }
         liner.setUpCanvas();
         liner.refreshCanvas();

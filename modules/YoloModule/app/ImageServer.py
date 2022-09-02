@@ -37,6 +37,9 @@ class ImageStreamHandler(tornado.websocket.WebSocketHandler):
                 self.rules_edit_mode(self.videoCapture)
             if 'name' in msg['payload'] and msg['payload']['name'] == 'save' and self.edit:
                 print(f"Saved: {msg['payload']['content']}")
+            if 'name' in msg['payload'] and msg['payload']['name'] == 'initLines':
+                print(f"that are the lines: {msg['payload']['content']}")
+                self.videoCapture.linesRaw = msg['payload']['content']
         if msg['type'] == 'report':
             self.get_report(msg)
 

@@ -82,6 +82,7 @@ class DetectAndTrack():
 
         # start the frames per second throughput estimator
         self.fps = FPS().start()
+        self.markerLines = []
     
     def __createBlobName(self, id, typeName):
         extension = "jpg"
@@ -299,14 +300,16 @@ class DetectAndTrack():
 
                 # check to see if the object has been counted or not
                 if not to.counted:
-                    if int(directionY) == 0 and int(directionX) == 0:
-                        #self.totalUp += 1
+                    line_start = self.markerLines[0]['start']
+                    line_end = self.markerLines[0]['end']
+
+                    if directionX < 0 and centroid[0] < line_start[0] and centroid[1]-10 < line_end[1] and centroid[1]-10 > line_start[1]:
+                        self.totalUp += 1
                         to.counted = True
 
                     # if the direction is positive (indicating the object
-                    # is moving down) AND the centroid is below the
-                    # center line, count the object
-                    elif directionY > 0 and centroid[1] > H // 2:
+                    # is moving forward) AND the centroid is from crossing line
+                    elif directionX > 0 and centroid[0] > line_start[0] and centroid[1]-10 < line_end[1] and centroid[1]-10 > line_start[1]:
                         self.totalDown += 1
                         to.counted = True
 
